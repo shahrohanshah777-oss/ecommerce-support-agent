@@ -10,6 +10,11 @@ from pathlib import Path
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")  # ChromaDB telemetry
+# CrewAI execution tracing. CREWAI_TRACING_ENABLED=false alone does NOT stop the
+# first-run trace collection + 20s "Share this execution trace?" prompt;
+# CREWAI_TESTING=true does (it is only read by crewai's tracing code).
+os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
+os.environ.setdefault("CREWAI_TESTING", "true")
 
 # --- Paths -------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent
@@ -22,6 +27,10 @@ REQUEST_LOG = LOGS_DIR / "requests.jsonl"
 # --- LLM mode ----------------------------------------------------------------
 # Graded transcripts run with MOCK_LLM=true (default): deterministic, no API keys.
 MOCK_LLM = os.environ.get("MOCK_LLM", "true").lower() == "true"
+
+# --- Orders ------------------------------------------------------------------
+# Shared by dataset.py (ID generation) and the mock LLM (ID extraction).
+ORDER_ID_PATTERN = r"\bNYK-\d{4,6}\b"
 
 # --- RAG ---------------------------------------------------------------------
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
