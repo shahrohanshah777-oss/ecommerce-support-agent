@@ -1,6 +1,6 @@
 # Transcript: task03_indexing
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:04:34
+# Generated: 2026-10-30T19:21:55
 
 Embedding model : sentence-transformers/all-MiniLM-L6-v2 (local SentenceTransformers, normalised vectors)
 Fixed strategy  : 40-word windows, 10-word overlap

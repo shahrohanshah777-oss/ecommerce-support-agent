@@ -1,6 +1,6 @@
 # Transcript: task10_guardrails
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:06:23
+# Generated: 2026-10-30T19:23:45
 
 A. INPUT GUARDRAIL - PII masking (fixed-format fields: phone, card last-4)
   raw input      : My phone is +91 98765 43210 and I paid with my Visa card ending 4242 - how long does a COD refund take?

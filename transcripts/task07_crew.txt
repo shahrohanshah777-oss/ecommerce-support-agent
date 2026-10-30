@@ -1,6 +1,6 @@
 # Transcript: task07_crew
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:05:29
+# Generated: 2026-10-30T19:22:51
 
 Calibrating ORDER_POLICY_MIN_SIM (when to append policy to an order answer):
   status-only  top1=0.374 -> ['13_order_status_glossary'] | Where is my order NYK-1009?

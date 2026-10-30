@@ -36,8 +36,16 @@ def get_client() -> chromadb.ClientAPI:
     )
 
 
+# HNSW is approximate and its graph is built with randomness, so with the default
+# search breadth a freshly built index can occasionally miss a low-similarity
+# neighbour (seen once in a fresh-clone test). With ~50 chunks per collection,
+# ef >= collection size makes search effectively exhaustive: exact and identical
+# on every machine.
+HNSW_SETTINGS = {"hnsw:space": "cosine", "hnsw:search_ef": 100, "hnsw:construction_ef": 200}
+
+
 def get_collection(name: str):
-    return get_client().get_or_create_collection(name=name, metadata={"hnsw:space": "cosine"})
+    return get_client().get_or_create_collection(name=name, metadata=HNSW_SETTINGS)
 
 
 def _embedding_text(chunk: dict) -> str:

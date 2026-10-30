@@ -1,6 +1,6 @@
 # Transcript: task04_calibrate
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:04:47
+# Generated: 2026-10-30T19:22:08
 
 Embedding model: sentence-transformers/all-MiniLM-L6-v2 | chunks embedded as '<doc title>: <chunk>'
 

@@ -1,6 +1,6 @@
 # Transcript: task05_retrieval_eval
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:05:13
+# Generated: 2026-10-30T19:22:35
 
 top_k = 3 chunks -> mapped to parent doc_id -> de-duplicated -> scored
 
