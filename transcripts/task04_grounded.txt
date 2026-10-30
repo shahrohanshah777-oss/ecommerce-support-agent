@@ -1,6 +1,6 @@
 # Transcript: task04_grounded
 # MOCK_LLM=True
-# Generated: 2026-10-30T18:31:09
+# Generated: 2026-10-30T18:58:00
 
 IDK_THRESHOLD = 0.34 (calibrated in task04_calibrate) | top_k = 3
 
@@ -11,32 +11,32 @@ Collection: kb_sentence
 [IN-SCOPE ] Q: What is the return window for electronics?
   retrieved: 01_return_window(0.494), 04_reverse_pickup(0.356), 10_damaged_item_claims(0.355)
   top1=0.494 vs threshold 0.34 -> grounded=True
-  A: Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
+  A: Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
   sources: ['01_return_window']
 
 [IN-SCOPE ] Q: How long does a COD refund take to reach my bank account?
   retrieved: 02_cod_refund_timelines(0.792), 02_cod_refund_timelines(0.731), 02_cod_refund_timelines(0.641)
   top1=0.792 vs threshold 0.34 -> grounded=True
-  A: If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline.
+  A: The customer can take the refund as Nykaa Wallet credit, which arrives within 24 hours of the quality check, or as a bank transfer by NEFT or IMPS, which arrives within 5 to 7 business days. If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline.
   sources: ['02_cod_refund_timelines']
 
 [IN-SCOPE ] Q: Can I still cancel my order if the shipment is delayed?
   retrieved: 06_order_cancellation(0.711), 06_order_cancellation(0.576), 03_delivery_sla(0.551)
   top1=0.711 vs threshold 0.34 -> grounded=True
-  A: Once an order has Shipped it can no longer be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.
+  A: An order can be cancelled free of charge from the app or website at any time while its status is Placed. Once an order has Shipped it can no longer be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.
   sources: ['06_order_cancellation']
 
 [IN-SCOPE ] Q: How many reward points can I use on an order?
   retrieved: 07_loyalty_points(0.615), 07_loyalty_points(0.527), 07_loyalty_points(0.505)
   top1=0.615 vs threshold 0.34 -> grounded=True
-  A: One reward point is worth Rs 1, and points can pay for up to 50% of an order's value on orders of at least Rs 500.
+  A: Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members. One reward point is worth Rs 1, and points can pay for up to 50% of an order's value on orders of at least Rs 500.
   sources: ['07_loyalty_points']
 
 [IN-SCOPE ] Q: I received a damaged hair straightener, what should I do?
   retrieved: 10_damaged_item_claims(0.413), 05_warranty_terms(0.407), 10_damaged_item_claims(0.326)
   top1=0.413 vs threshold 0.34 -> grounded=True
-  A: Electronics such as hair dryers, straighteners and trimmers carry a 12-month manufacturer warranty from the delivery date, serviced at the brand's authorised service centres with the Nykaa invoice as proof of purchase.
-  sources: ['05_warranty_terms']
+  A: If an item arrives damaged, defective or different from what was ordered, the customer must raise a claim from the order details page within 48 hours of delivery. Valid claims are resolved within 3 business days with a free replacement or a full refund, even for Beauty products that would otherwise be non-returnable.
+  sources: ['10_damaged_item_claims']
 
 [OUT-SCOPE] Q: Can you book me a train ticket to Delhi for tomorrow?
   retrieved: 03_delivery_sla(0.295), 11_international_shipping(0.280), 12_escalation_matrix(0.264)
@@ -50,7 +50,7 @@ Collection: kb_fixed
 [IN-SCOPE ] Q: What is the return window for electronics?
   retrieved: 01_return_window(0.525), 10_damaged_item_claims(0.362), 05_warranty_terms(0.361)
   top1=0.525 vs threshold 0.34 -> grounded=True
-  A: Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
+  A: Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
   sources: ['01_return_window']
 
 [IN-SCOPE ] Q: How long does a COD refund take to reach my bank account?
@@ -62,20 +62,20 @@ Collection: kb_fixed
 [IN-SCOPE ] Q: Can I still cancel my order if the shipment is delayed?
   retrieved: 06_order_cancellation(0.639), 06_order_cancellation(0.618), 06_order_cancellation(0.492)
   top1=0.639 vs threshold 0.34 -> grounded=True
-  A: ...be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.
+  A: An order can be cancelled free of charge from the app or website at any time while its status is Placed. ...be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.
   sources: ['06_order_cancellation']
 
 [IN-SCOPE ] Q: How many reward points can I use on an order?
   retrieved: 07_loyalty_points(0.709), 07_loyalty_points(0.561), 07_loyalty_points(0.512)
   top1=0.709 vs threshold 0.34 -> grounded=True
-  A: ...and points can pay for up to 50% of an order's value on orders of at least Rs 500. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.
+  A: Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members. ...and points can pay for up to 50% of an order's value on orders of at least Rs 500.
   sources: ['07_loyalty_points']
 
 [IN-SCOPE ] Q: I received a damaged hair straightener, what should I do?
   retrieved: 10_damaged_item_claims(0.415), 10_damaged_item_claims(0.393), 05_warranty_terms(0.367)
   top1=0.415 vs threshold 0.34 -> grounded=True
-  A: Electronics such as hair dryers, straighteners and trimmers carry a 12-month manufacturer warranty from the delivery date, serviced at the brand's authorised service centres with the Nykaa invoice as proof of purchase.
-  sources: ['05_warranty_terms']
+  A: If an item arrives damaged, defective or different from what was ordered, the customer must raise a claim from the order details page within 48 hours of delivery. ...days with a free replacement or a full refund, even for Beauty products that would otherwise be non-returnable.
+  sources: ['10_damaged_item_claims']
 
 [OUT-SCOPE] Q: Can you book me a train ticket to Delhi for tomorrow?
   retrieved: 03_delivery_sla(0.331), 12_escalation_matrix(0.268), 11_international_shipping(0.265)

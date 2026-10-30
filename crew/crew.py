@@ -56,8 +56,13 @@ def json_objects(text: str) -> list[dict]:
 
 ASK_FOR_ORDER_ID = ("If your question is about a specific order, please share its order ID "
                     "(for example NYK-1234) so I can check it.")
+# Only questions about the state of ONE specific purchase ("return it", "where is
+# my order", "cancel this order") - not generic mentions such as "deliver my
+# order to London" or "sent the item back", which are policy questions.
 _REFERS_TO_AN_ORDER = re.compile(
-    r"\b(my|this|that|the) (order|package|parcel|item|purchase)\b|\b(return|cancel|track|exchange) it\b",
+    r"\b(return|cancel|track|exchange|refund) it\b"
+    r"|\bwhere is (my|the|this) (order|package|parcel)\b"
+    r"|\b(status of|track|cancel|return|exchange) (my|this|that) (order|package|parcel|purchase)\b",
     re.IGNORECASE,
 )
 

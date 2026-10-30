@@ -11,7 +11,7 @@ import re
 
 from pydantic import BaseModel
 
-from rag.kb import split_sentences
+from rag.kb import answer_sentences
 
 # --- PII masking ---------------------------------------------------------------
 # Full card numbers (13-19 digits, optional space/dash groups) are masked whole.
@@ -123,8 +123,8 @@ def check_groundedness(
     evidence = " ".join(context)
     allowed = set(allowed_sentences)
     unsupported = []
-    for sentence in split_sentences(answer.replace("Relevant policy: ", "")):
-        if sentence in allowed or sentence.replace("...", "").strip() in evidence:
+    for sentence in answer_sentences(answer):
+        if sentence in allowed or sentence in evidence:
             continue
         unsupported.append(sentence)
     if unsupported:

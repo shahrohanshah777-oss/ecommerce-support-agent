@@ -46,7 +46,7 @@ class RagLookupTool(BaseTool):
                 "grounded": r.grounded,
                 "top_similarity": r.top_similarity,
                 "sources": r.sources,
-                "context": [c.text for c in r.context if c.similarity >= r.threshold],
+                "context": r.evidence,  # everything the answer may quote (small-to-big)
             },
             ensure_ascii=False,
         )

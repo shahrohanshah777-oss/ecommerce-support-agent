@@ -24,6 +24,7 @@ DEMOS = [
     "demos.task10_guardrails",
     "demos.task11_12_api",
     "demos.task13_eval",
+    "demos.eval_v2_compare",  # eval_v2_baseline is frozen evidence and deliberately not re-run
     "demos.task14_review",
     "demos.task15_governance",
     "demos.task16_cache",

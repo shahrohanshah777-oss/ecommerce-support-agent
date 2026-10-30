@@ -1,6 +1,6 @@
 # Transcript: task06_order_status
 # MOCK_LLM=True
-# Generated: 2026-10-30T18:31:24
+# Generated: 2026-10-30T18:58:15
 
 escalation_score = 0.6 * delayed_shipment + 0.4 * (days_since_created / 30)
 escalate when escalation_score >= 0.7

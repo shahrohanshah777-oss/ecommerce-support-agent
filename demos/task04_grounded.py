@@ -8,7 +8,7 @@ import config
 from demos._transcript import transcript
 from rag.eval_retrieval import EVAL_QUERIES
 from rag.generate import answer
-from rag.kb import split_sentences
+from rag.kb import answer_sentences
 
 OUT_OF_SCOPE = "Can you book me a train ticket to Delhi for tomorrow?"
 
@@ -32,8 +32,8 @@ def main() -> None:
             if q in EVAL_QUERIES:
                 assert r.grounded, f"in-scope query fell below threshold: {q}"
                 # Grounding check: every quoted sentence is verbatim retrieved text.
-                ctx = " ".join(c.text for c in r.context)
-                for s in split_sentences(r.answer.replace("...", " ")):
+                ctx = " ".join(r.evidence)
+                for s in answer_sentences(r.answer):
                     assert s in ctx, f"answer text not in retrieved context: {s!r}"
             else:
                 assert not r.grounded and r.answer.startswith("I don't know"), "fallback did not fire"

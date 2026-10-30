@@ -1,8 +1,8 @@
 {
   "averages": {
-    "accuracy": 0.9,
+    "accuracy": 0.9666666666666667,
     "grounding": 1.0,
-    "completeness": 0.8,
+    "completeness": 0.8666666666666667,
     "safety": 1.0
   },
   "rows": [
@@ -15,7 +15,7 @@
       "sources": [
         "01_return_window"
       ],
-      "answer": "Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days.",
+      "answer": "Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Beauty products can be returned within 7 days only if the seal is unbroken and the product is unused, because opened cosmetics cannot be resold for hygiene reasons.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -35,7 +35,7 @@
       "sources": [
         "02_cod_refund_timelines"
       ],
-      "answer": "For Cash-on-Delivery orders, a refund is issued only after the returned item passes quality check at the Nykaa warehouse. If your question is about a specific order, please share its order ID (for example NYK-1234) so I can check it.",
+      "answer": "For Cash-on-Delivery orders, a refund is issued only after the returned item passes quality check at the Nykaa warehouse. Cash is never refunded at the doorstep.",
       "accuracy": 0.5,
       "grounding": 1.0,
       "completeness": 0.0,
@@ -56,7 +56,7 @@
       "sources": [
         "03_delivery_sla"
       ],
-      "answer": "Standard delivery takes 2 to 4 business days to metro cities and 4 to 7 business days to the rest of India.",
+      "answer": "Standard delivery takes 2 to 4 business days to metro cities and 4 to 7 business days to the rest of India. Express delivery arrives on the next business day for eligible pin codes when the order is placed before 2 PM.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -76,15 +76,16 @@
       "sources": [
         "04_reverse_pickup"
       ],
-      "answer": "The courier makes two pickup attempts, and if both fail the return request is cancelled automatically.",
-      "accuracy": 0.5,
+      "answer": "Reverse pickup is the free doorstep collection of an item that a customer is returning. The courier makes two pickup attempts, and if both fail the return request is cancelled automatically.",
+      "accuracy": 1.0,
       "grounding": 1.0,
-      "completeness": 0.0,
+      "completeness": 0.5,
       "safety": 1.0,
       "rationale": "expected answer, observed answer",
-      "facts_found": [],
+      "facts_found": [
+        "doorstep"
+      ],
       "facts_missing": [
-        "doorstep",
         "pin code"
       ]
     },
@@ -97,7 +98,7 @@
       "sources": [
         "05_warranty_terms"
       ],
-      "answer": "Electronics such as hair dryers, straighteners and trimmers carry a 12-month manufacturer warranty from the delivery date, serviced at the brand's authorised service centres with the Nykaa invoice as proof of purchase.",
+      "answer": "Electronics such as hair dryers, straighteners and trimmers carry a 12-month manufacturer warranty from the delivery date, serviced at the brand's authorised service centres with the Nykaa invoice as proof of purchase. The warranty does not cover physical damage, liquid damage or misuse.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -118,7 +119,7 @@
         "orders_dataset",
         "06_order_cancellation"
       ],
-      "answer": "Order NYK-1001 (Footwear, Rs 4,519) is currently Placed, placed 1 day ago. Its escalation score is 0.01, below the 0.70 threshold, so no escalation is needed. Relevant policy: An order can be cancelled free of charge from the app or website at any time while its status is Placed.",
+      "answer": "Order NYK-1001 (Footwear, Rs 4,519) is currently Placed, placed 1 day ago. Its escalation score is 0.01, below the 0.70 threshold, so no escalation is needed. Relevant policy: An order can be cancelled free of charge from the app or website at any time while its status is Placed. Once an order has Shipped it can no longer be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -139,7 +140,7 @@
       "sources": [
         "07_loyalty_points"
       ],
-      "answer": "Reward points expire 12 months after they are credited. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.",
+      "answer": "Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members. Reward points expire 12 months after they are credited.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -159,7 +160,7 @@
       "sources": [
         "08_payment_failure_retry"
       ],
-      "answer": "If a payment fails but money has been debited from the customer's account, no order is created and the bank or payment gateway reverses the amount automatically within 5 to 7 business days.",
+      "answer": "If a payment fails but money has been debited from the customer's account, no order is created and the bank or payment gateway reverses the amount automatically within 5 to 7 business days. A failed payment can be retried at most 3 times for the same order, after which the order is cancelled and the items are released back to inventory.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -180,7 +181,7 @@
       "sources": [
         "09_size_exchange"
       ],
-      "answer": "Apparel and Footwear can be exchanged for a different size of the same product within 15 days of delivery, provided the item is unworn and still has its original tags.",
+      "answer": "Apparel and Footwear can be exchanged for a different size of the same product within 15 days of delivery, provided the item is unworn and still has its original tags. The replacement ships only after the original item has been picked up, and size exchanges are free of charge.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,
@@ -201,15 +202,16 @@
       "sources": [
         "10_damaged_item_claims"
       ],
-      "answer": "Valid claims are resolved within 3 business days with a free replacement or a full refund, even for Beauty products that would otherwise be non-returnable.",
-      "accuracy": 0.5,
+      "answer": "If an item arrives damaged, defective or different from what was ordered, the customer must raise a claim from the order details page within 48 hours of delivery. Valid claims are resolved within 3 business days with a free replacement or a full refund, even for Beauty products that would otherwise be non-returnable.",
+      "accuracy": 1.0,
       "grounding": 1.0,
-      "completeness": 0.0,
+      "completeness": 0.5,
       "safety": 1.0,
       "rationale": "expected answer, observed answer",
-      "facts_found": [],
+      "facts_found": [
+        "48 hours"
+      ],
       "facts_missing": [
-        "48 hours",
         "photo"
       ]
     },
@@ -220,10 +222,9 @@
       "status": "answered",
       "intent": "policy",
       "sources": [
-        "13_order_status_glossary",
         "11_international_shipping"
       ],
-      "answer": "Delivered means the courier has confirmed delivery, which starts the return window. Nykaa currently delivers only to addresses within India, and international addresses cannot be saved at checkout. If your question is about a specific order, please share its order ID (for example NYK-1234) so I can check it.",
+      "answer": "Nykaa currently delivers only to addresses within India, and international addresses cannot be saved at checkout. Customers living abroad can order for delivery to an Indian address, but they must pay with an Indian-issued card, UPI or Nykaa Wallet.",
       "accuracy": 1.0,
       "grounding": 1.0,
       "completeness": 1.0,

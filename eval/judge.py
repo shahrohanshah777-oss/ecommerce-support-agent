@@ -19,7 +19,7 @@ from eval.testset import EvalCase
 from guardrails import INJECTION_REFUSAL, UNGROUNDED_REFUSAL, mask_pii
 from pipeline import PipelineResult
 from rag.generate import IDK_ANSWER
-from rag.kb import split_sentences
+from rag.kb import answer_sentences, split_sentences
 from tools.order_status import ESCALATION_THRESHOLD, escalation_score
 
 JUDGE_PROMPT = """You are an impartial evaluator of a Nykaa customer-support assistant.
@@ -99,7 +99,7 @@ class MockJudge:
         for rid in query_ids:
             truth = ground_truth_order(rid)
             allowed |= set(order_sentences(truth)) if truth else set(order_not_found_sentences(rid))
-        sentences = split_sentences(answer.replace("Relevant policy: ", ""))
+        sentences = answer_sentences(answer)
         supported = [s for s in sentences if s in allowed or s in evidence]
         grounding = len(supported) / len(sentences) if sentences else 1.0
         if grounding < 1:

@@ -87,6 +87,13 @@ def upsert_document(doc: dict) -> dict[str, int]:
     return added
 
 
+def parent_chunks(doc_id: str, collection: str) -> list[str]:
+    """All chunks of one document in its original order (small-to-big expansion)."""
+    got = get_collection(collection).get(where={"doc_id": doc_id}, include=["documents", "metadatas"])
+    pairs = sorted(zip(got["metadatas"], got["documents"]), key=lambda p: p[0]["chunk_index"])
+    return [text for _, text in pairs]
+
+
 def ensure_index() -> None:
     if any(get_collection(name).count() == 0 for name in STRATEGIES):
         build_index()

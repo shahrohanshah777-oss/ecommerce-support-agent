@@ -4,7 +4,7 @@ import config
 import rag.eval_retrieval as ev
 from rag.chunking import chunk_corpus, fixed_chunks, sentence_chunks
 from rag.generate import answer
-from rag.kb import load_documents, split_sentences
+from rag.kb import answer_sentences, load_documents
 
 
 def test_fixed_chunks_window_and_overlap():
@@ -35,8 +35,20 @@ def test_out_of_scope_triggers_fallback():
 def test_in_scope_answer_quotes_only_retrieved_text():
     r = answer("How many reward points can I use on an order?")
     assert r.grounded and r.sources == ["07_loyalty_points"]
-    context = " ".join(c.text for c in r.context)
-    assert all(s in context for s in split_sentences(r.answer.replace("...", " ")))
+    evidence = " ".join(r.evidence)
+    assert all(s in evidence for s in answer_sentences(r.answer))
+
+
+def test_answer_sentences_splits_lowercase_window_fragments():
+    a = "An order can be cancelled while Placed. ...be cancelled, unless delayed, so refuse it."
+    assert answer_sentences(a) == ["An order can be cancelled while Placed.", "be cancelled, unless delayed, so refuse it."]
+
+
+def test_small_to_big_expands_to_the_whole_top_document():
+    r = answer("What is the return window for electronics?", use_cache=False)
+    assert r.context[0].doc_id == "01_return_window"
+    assert "Electronics within 7 days" not in " ".join(c.text for c in r.context)  # not retrieved...
+    assert "Electronics within 7 days" in r.answer  # ...but answered via parent-document expansion
 
 
 def test_precision_recall_dedups_chunks_to_docs(monkeypatch):

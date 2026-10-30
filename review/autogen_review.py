@@ -25,7 +25,7 @@ from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_core.models import LLMMessage, UserMessage
 from pydantic import BaseModel
 
-from rag.kb import split_sentences
+from rag.kb import answer_sentences
 from review.mock_client import RuleBasedChatClient
 
 REVIEWER, EDITOR = "policy_reviewer", "final_editor"
@@ -81,7 +81,7 @@ def _task(messages: Sequence[LLMMessage]) -> str:
 
 
 def draft_sentences(draft: str) -> list[str]:
-    return split_sentences(draft.replace("Relevant policy: ", ""))
+    return answer_sentences(draft)
 
 
 # --- mock "models" ---------------------------------------------------------------

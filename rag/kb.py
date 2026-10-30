@@ -31,6 +31,13 @@ def split_sentences(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE_END.split(text.strip()) if s.strip()]
 
 
+def answer_sentences(answer: str) -> list[str]:
+    """The quoted pieces of an extractive answer. Fixed-window fragments are joined
+    with '...' and may start lower-case, so split on '...' first, then on sentences."""
+    text = answer.replace("Relevant policy: ", "")
+    return [s.strip() for piece in text.split("...") for s in split_sentences(piece) if s.strip()]
+
+
 def load_documents(kb_dir=config.KB_DIR) -> list[dict]:
     docs = []
     for path in sorted(kb_dir.glob("*.md")):

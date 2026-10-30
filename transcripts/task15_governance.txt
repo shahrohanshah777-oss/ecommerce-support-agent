@@ -1,6 +1,6 @@
 # Transcript: task15_governance
 # MOCK_LLM=True
-# Generated: 2026-10-30T18:33:53
+# Generated: 2026-10-30T19:01:06
 
 APPLICATION LAYER - least autonomy
   allow-list: {'check_order_status': ['Lookup Agent'], 'rag_lookup': ['Retrieval Agent']}
@@ -32,15 +32,15 @@ RISK CLASSIFICATION: Medium
   to issue refunds or change orders, it would become High risk and would need human approval for 
   those actions. 
 
-RUNTIME LAYER - per-request token budget = 8,000 tokens (estimate = 5,000 + 6 x query tokens; illustrative cost Rs 0.25/1K tokens)
+RUNTIME LAYER - per-request token budget = 8,500 tokens (estimate = 5,500 + 6 x query tokens; illustrative cost Rs 0.25/1K tokens)
   normal request : 'Can I cancel order NYK-1001?'
-    pre-flight   : within budget (estimated 5,042 tokens, Rs 1.2605)
-    metered      : 4,697 tokens actually used (Rs 1.1743), status=answered
+    pre-flight   : within budget (estimated 5,542 tokens, Rs 1.3855)
+    metered      : 5,253 tokens actually used (Rs 1.3133), status=answered
 
   oversized request: 12,087 characters (a pasted complaint log + a question)
-    pre-flight   : estimated 23,132 tokens exceeds the per-request budget of 8,000
+    pre-flight   : estimated 23,632 tokens exceeds the per-request budget of 8,500
     status       : rejected_budget | tools invoked: none | tokens used: 0 | review/crew ran: False
     answer       : Your message is too long for me to process in one request. Please shorten it to the key question (for example, your order ID and what you need).
 
   same request via POST /ask -> HTTP 422 (String should have at most 2000 characters) - the API's max_length is a second, earlier cap
-  largest request the API accepts (2,000 chars): within budget (estimated 8,000)
+  largest request the API accepts (2,000 chars): within budget (estimated 8,500)

@@ -51,6 +51,20 @@ def test_composer_never_invents_an_order():
     assert resp.order is None and "couldn't find" in resp.answer and resp.sources == []
 
 
+@pytest.mark.parametrize("query,expected", [
+    ("How many days do I have to return it?", True),
+    ("Where is my order?", True),
+    ("Can I cancel this order?", True),
+    ("Can you deliver my order to an address in London?", False),
+    ("I paid cash on delivery and sent the item back. How will I get my money?", False),
+    ("What is the return window for footwear?", False),
+])
+def test_order_id_hint_only_for_specific_order_questions(query, expected):
+    retrieval = {"grounded": True, "answer": "Policy sentence.", "sources": ["01"], "top_similarity": 0.6}
+    resp = compose_response(retrieval, {"found": False, "record_id": None}, query)
+    assert ("share its order ID" in resp.answer) is expected
+
+
 def test_json_objects_extracts_embedded_blobs():
     text = 'noise {"a": 1} more {"b": {"c": 2}} {bad'
     assert json_objects(text) == [{"a": 1}, {"b": {"c": 2}}]

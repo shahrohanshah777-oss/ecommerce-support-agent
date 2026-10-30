@@ -1,10 +1,15 @@
 """Task 4 - grounded generation over the retrieved context only.
 
-Under MOCK_LLM the generator is extractive: it may only copy sentences that are
-present in the retrieved chunks, ranked by embedding similarity to the query.
-That makes every answer grounded by construction; the only judgement call is
-whether retrieval found anything relevant, which is the calibrated
-IDK_THRESHOLD on top-1 cosine similarity.
+Retrieval uses small chunks (one sentence each) because they match queries
+precisely; generation uses "small-to-big" expansion: the generator sees every
+chunk of the top-ranked document, not just the one sentence that matched.
+Sentence chunks reliably find the right *document* but often miss the sentence
+that holds the answer (diagnosed on the development set, see README).
+
+Under MOCK_LLM the generator is extractive: it quotes the 2 best-scoring
+sentences of that document verbatim, in document order. Every answer is
+therefore grounded by construction; whether retrieval found anything relevant
+at all is decided by the calibrated IDK_THRESHOLD on top-1 cosine similarity.
 """
 from __future__ import annotations
 
@@ -15,7 +20,7 @@ from pydantic import BaseModel
 
 import config
 from rag.cache import answer_cache, normalize
-from rag.index import embed, search
+from rag.index import embed, parent_chunks, search
 from rag.kb import split_sentences
 from rag.lexical import keyword_overlap
 
@@ -35,8 +40,7 @@ Question: {query}
 Answer:"""
 
 LEXICAL_WEIGHT = 0.4  # sentence score = dense cosine + 0.4 * IDF keyword overlap
-MAX_ANSWER_SENTENCES = 2
-SECOND_SENTENCE_MARGIN = 0.05  # include a 2nd sentence only if nearly as relevant
+MAX_ANSWER_SENTENCES = 2  # concise replies; quoting more would only game completeness
 MIN_FRAGMENT_WORDS = 6  # drop window-edge scraps like "Reward points..."
 MAX_WORD_OVERLAP = 0.5  # a 2nd sentence must add new content, not repeat the 1st
 
@@ -57,7 +61,8 @@ class GroundedAnswer(BaseModel):
     top_similarity: float
     threshold: float
     sources: list[str]
-    context: list[RetrievedChunk]
+    context: list[RetrievedChunk]  # what retrieval returned (top-k)
+    evidence: list[str] = []  # everything the generator was allowed to quote
 
 
 class MockGenerator:
@@ -66,30 +71,28 @@ class MockGenerator:
     def __init__(self) -> None:
         self.calls = 0
 
-    def __call__(self, prompt: str, query: str, chunks: list[RetrievedChunk]) -> tuple[str, list[str]]:
+    def __call__(self, prompt: str, query: str, doc_chunks: list[str], doc_id: str, title: str) -> str:
+        """Quote the best MAX_ANSWER_SENTENCES sentences of one document, in document order."""
         self.calls += 1
-        candidates = []  # (sentence, doc_id, title)
-        for c in chunks:
-            for s in split_sentences(c.text):
-                if len(s.split()) >= MIN_FRAGMENT_WORDS and all(s != x[0] for x in candidates):
-                    candidates.append((s, c.doc_id, c.title))
-        if not candidates:  # every piece was a scrap: fall back to the best chunk itself
-            candidates = [(chunks[0].text, chunks[0].doc_id, chunks[0].title)]
+        candidates: list[str] = []
+        for chunk in doc_chunks:
+            for s in split_sentences(chunk):
+                if len(s.split()) >= MIN_FRAGMENT_WORDS and s not in candidates:
+                    candidates.append(s)
+        if not candidates:  # every piece was a scrap: fall back to the first chunk itself
+            candidates = [doc_chunks[0]]
         # Both scores see the same "<title>: <text>" form used at indexing time;
         # the keyword term separates sentences that share a document title.
-        headed = [f"{t}: {s}" for s, _, t in candidates]
+        headed = [f"{title}: {s}" for s in candidates]
         vecs = np.array(embed([query] + headed))
         scores = vecs[1:] @ vecs[0] + LEXICAL_WEIGHT * np.array([keyword_overlap(query, h) for h in headed])
-        order = [int(i) for i in np.argsort(-scores)]
-        picked = [order[0]]
-        for i in order[1:]:
-            if len(picked) == MAX_ANSWER_SENTENCES or scores[i] < scores[order[0]] - SECOND_SENTENCE_MARGIN:
+        picked: list[int] = []
+        for i in (int(i) for i in np.argsort(-scores)):
+            if len(picked) == MAX_ANSWER_SENTENCES:
                 break
-            if _word_overlap(candidates[i][0], candidates[picked[0]][0]) <= MAX_WORD_OVERLAP:
+            if all(_word_overlap(candidates[i], candidates[j]) <= MAX_WORD_OVERLAP for j in picked):
                 picked.append(i)
-        sentences = [_tidy(candidates[i][0]) for i in picked]
-        sources = list(dict.fromkeys(candidates[i][1] for i in picked))
-        return " ".join(sentences), sources
+        return " ".join(_tidy(candidates[i]) for i in sorted(picked))
 
 
 def _word_overlap(a: str, b: str) -> float:
@@ -142,8 +145,12 @@ def _answer_uncached(original: str, query: str, collection: str, k: int) -> Grou
     if top < config.IDK_THRESHOLD:
         return GroundedAnswer(answer=IDK_ANSWER, grounded=False, sources=[], **base)
 
-    # Only chunks that clear the threshold are allowed into the context.
-    usable = [c for c in chunks if c.similarity >= config.IDK_THRESHOLD]
-    prompt = PROMPT_TEMPLATE.format(context="\n".join(f"- {c.text}" for c in usable), query=query)
-    text, sources = generator(prompt, query, usable)
-    return GroundedAnswer(answer=text, grounded=True, sources=sources, **base)
+    # Small-to-big: answer from the whole top-ranked document; other retrieved
+    # chunks that clear the threshold stay in the evidence (and the prompt).
+    top_doc = chunks[0]
+    doc_chunks = parent_chunks(top_doc.doc_id, collection)
+    evidence = doc_chunks + [c.text for c in chunks
+                             if c.similarity >= config.IDK_THRESHOLD and c.text not in doc_chunks]
+    prompt = PROMPT_TEMPLATE.format(context="\n".join(f"- {e}" for e in evidence), query=query)
+    text = generator(prompt, query, doc_chunks, top_doc.doc_id, top_doc.title)
+    return GroundedAnswer(answer=text, grounded=True, sources=[top_doc.doc_id], evidence=evidence, **base)

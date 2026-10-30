@@ -1,6 +1,6 @@
 # Transcript: task10_guardrails
 # MOCK_LLM=True
-# Generated: 2026-10-30T18:32:32
+# Generated: 2026-10-30T18:59:25
 
 A. INPUT GUARDRAIL - PII masking (fixed-format fields: phone, card last-4)
   raw input      : My phone is +91 98765 43210 and I paid with my Visa card ending 4242 - how long does a COD refund take?
@@ -8,7 +8,7 @@ A. INPUT GUARDRAIL - PII masking (fixed-format fields: phone, card last-4)
   findings       : {'phone': 1, 'card_last4': 1}
   crew saw       : ['My phone is [PHONE] and I paid with my Visa card ending [CARD_LAST4] - how long does a COD refund take?']
   memory stored  : My phone is [PHONE] and I paid with my Visa card ending [CARD_LAST4] - how long does a COD refund take?
-  answer         : If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline. The customer can take the refund as Nykaa Wallet credit, which arrives within 24 hours of the quality check, or as a bank transfer by NEFT or IMPS, which arrives within 5 to 7 business days.
+  answer         : The customer can take the refund as Nykaa Wallet credit, which arrives within 24 hours of the quality check, or as a bank transfer by NEFT or IMPS, which arrives within 5 to 7 business days. If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline.
   FIRED: raw digits never reached the agents, the tools or the conversation memory.
   Not masked by design (out of scope): customer names and free-text addresses.
 
