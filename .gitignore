@@ -1,0 +1,22 @@
+# Course brief - not part of the submission
+question_statement
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated at runtime
+chroma_db/
+logs/*
+!logs/.gitkeep
+
+# Local env / secrets (only needed if a real LLM is ever wired in)
+.env
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

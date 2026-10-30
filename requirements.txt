@@ -1,0 +1,27 @@
+# Python 3.12. Direct dependencies pinned to the versions this project was built and tested with.
+
+# Agents / orchestration
+crewai==1.15.33
+autogen-agentchat==0.7.5
+autogen-core==0.7.5
+autogen-ext==0.7.5
+langchain-core==1.7.3
+
+# RAG (local, free)
+chromadb==1.5.9
+sentence-transformers==6.2.0
+
+# API
+fastapi==0.162.0
+uvicorn==0.54.0
+websockets==17.3
+httpx==0.28.1
+pydantic==2.12.5
+
+# Testing
+pytest==9.2.0
+
+# Resolver pins: autogen-core requires protobuf~=5.29; without these pins pip
+# silently falls back to the legacy autogen-agentchat 0.2.x (no RoundRobinGroupChat).
+protobuf==5.29.6
+googleapis-common-protos==1.75.0
