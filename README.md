@@ -73,7 +73,7 @@ The first run downloads the free local embedding model `all-MiniLM-L6-v2` (~90 M
 | extra | Held-out re-evaluation of the improvements | `demos/eval_v2_compare.py` | `eval_v2_baseline.txt`, `eval_v2_compare.txt` |
 | extra | Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `phase1_mock_llm_spike.txt` |
 
-Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`.
+Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passes all 88 tests and 18 demos. It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
 
 ## Acceptance criteria checklist
 
