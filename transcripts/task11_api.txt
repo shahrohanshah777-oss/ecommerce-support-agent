@@ -1,22 +1,22 @@
 # Transcript: task11_api
 # MOCK_LLM=True
-# Generated: 2026-10-30T18:59:44
+# Generated: 2026-10-30T19:06:43
 
-Server: uvicorn on http://127.0.0.1:55561 (loopback) | MOCK_LLM=True
+Server: uvicorn on http://127.0.0.1:49671 (loopback) | MOCK_LLM=True
 
 1) GET /health
     {'status': 'ok', 'mock_llm': True, 'collections': {'kb_fixed': 42, 'kb_sentence': 52}}
 
 2) POST /ask  (Pydantic AskRequest -> AskResponse)
   policy question
-    HTTP 200  X-Trace-ID: 8fc971c02b6f44cda6e5f24ca5817418
+    HTTP 200  X-Trace-ID: cefff57811854cc1a1344cde9425ca76
     status      : answered
     intent      : policy
     answer      : Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
     sources     : ['01_return_window']
     pii_masked  : {}
   order question carrying PII
-    HTTP 200  X-Trace-ID: 693a084ea5024176882e42ba533b44fb
+    HTTP 200  X-Trace-ID: 78b59af1f5f64666a8ba2e534a9bdb28
     status      : answered
     intent      : order_status
     answer      : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its escalation score is 0.80 (threshold 0.70), so it has been escalated to Level 2 support.
@@ -24,7 +24,7 @@ Server: uvicorn on http://127.0.0.1:55561 (loopback) | MOCK_LLM=True
     escalate    : True
     pii_masked  : {'phone': 1, 'card_last4': 1}
   prompt injection
-    HTTP 200  X-Trace-ID: b2f16571b2f346678631422e2fd2e783
+    HTTP 200  X-Trace-ID: 4ebd91c385e7446dadffcb8b356047cb
     status      : blocked_injection
     answer      : I can't help with that request. I can answer questions about Nykaa orders and policies such as returns, refunds, delivery and cancellations.
     injection_matched: ['ignore_instructions', 'prompt_exfiltration']
@@ -35,7 +35,7 @@ Server: uvicorn on http://127.0.0.1:55561 (loopback) | MOCK_LLM=True
 
 4) POST /add-document  (new KB knowledge becomes answerable immediately)
     before: [answered/out_of_scope] I don't know - that question isn't covered by the Nykaa support knowledge base. Please contact Nykaa customer support for help.
-    added : {'trace_id': 'd2abb0abdcfb4e8ba4ddfc4001664cc6', 'doc_id': '14_gift_wrapping', 'sentences': 4, 'chunks_indexed': {'kb_fixed': 2, 'kb_sentence': 4}, 'pii_masked': {'phone': 1}}
+    added : {'trace_id': 'd6165f869f954890864bcf11fec0aae8', 'doc_id': '14_gift_wrapping', 'sentences': 4, 'chunks_indexed': {'kb_fixed': 2, 'kb_sentence': 4}, 'pii_masked': {'phone': 1}}
     after : [answered/policy] Nykaa offers gift wrapping on Beauty and Home orders for a flat fee of Rs 49 per order. Gift wrapping is not available on Cash-on-Delivery orders.  sources=['14_gift_wrapping']
 
 5) WebSocket /ws/chat/{session_id}  (multi-turn, then an abrupt disconnect)
@@ -43,7 +43,7 @@ Server: uvicorn on http://127.0.0.1:55561 (loopback) | MOCK_LLM=True
     <A [order_status] Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its...
     A> How many days do I have to return it?
     <A [order_status] Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its...
-    A> (malformed frame) -> {'trace_id': 'e2a8e44c3e34466c82e63847a711f6f5', 'error': 'send {"query": "..."}'}  (connection stays open)
+    A> (malformed frame) -> {'trace_id': '7cd7675357674c859cdab7013d8c075c', 'error': 'send {"query": "..."}'}  (connection stays open)
     A  sent turn 3 and dropped its TCP connection without waiting for the reply
     ...server keeps running; a different client connects:
     B> Can I exchange shoes for a bigger size?

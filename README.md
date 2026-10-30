@@ -1,8 +1,10 @@
 # Nykaa Domain Support Agent (CrewAI)
 
-**Track completed: Nykaa (E-commerce & Retail).**
+[![tests](https://github.com/shahrohanshah777-oss/ecommerce-support-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/shahrohanshah777-oss/ecommerce-support-agent/actions/workflows/tests.yml)
 
-> Work in progress. Sections below are filled in as each phase is completed.
+**Track completed: Nykaa (E-commerce & Retail).** Capstone project, Agentic Systems course, IIT Roorkee.
+
+A customer-support agent that answers Nykaa policy questions from a knowledge base and checks order status from a validated dataset. A **CrewAI** crew (Retrieval → Lookup → Composer) produces each answer, behind PII and prompt-injection guardrails, with LangChain session memory. Every draft is reviewed by an **Autogen** two-agent team and checked for groundedness before it is sent. It is governed by a tool allow-list and a per-request token budget, deployed with **FastAPI** (HTTP + WebSocket, JSON-Lines logs), and evaluated with an LLM-as-judge. **Everything runs under `MOCK_LLM` with zero API keys and zero network access** (`MOCK_LLM` is the only implemented mode; no real-LLM path is wired in).
 
 ## Dataset design (Task 1): reproduce with `python dataset.py`
 
@@ -30,6 +32,76 @@
 
 `delayed_shipment=True`: **14 / 60 = 23.3%** (required 10–30%). Every category has ≥ 3 records and every status has ≥ 1. `dataset.validate()` asserts all of these thresholds.
 
+## Quick start
+
+Requires **Python 3.12**. Tested on Windows 11 locally and on Ubuntu in CI.
+
+```bash
+python3.12 -m venv .venv            # Windows: py -3.12 -m venv .venv
+source .venv/bin/activate           # Windows: .venv\Scripts\activate
+pip install -r requirements.txt     # Linux tip: first `pip install torch --index-url https://download.pytorch.org/whl/cpu`
+
+python -m pytest                    # 88 tests
+python run_all_demos.py             # regenerates every transcript in transcripts/ (~5 min)
+uvicorn api.main:app --port 8000    # optional: run the API (docs at http://127.0.0.1:8000/docs)
+```
+
+The first run downloads the free local embedding model `all-MiniLM-L6-v2` (~90 MB) from Hugging Face and builds the ChromaDB index in `chroma_db/`. After that, everything runs offline. No API keys are needed at any point.
+
+`requirements.txt` pins `protobuf==5.29.6`. Without it, pip resolves crewai's OpenTelemetry dependencies to protobuf 7.x and silently falls back to the legacy `autogen-agentchat 0.2.x`, which has no `RoundRobinGroupChat`.
+
+## Where to find each task
+
+| Task | What | Code | Evidence (transcript) |
+|---|---|---|---|
+| 1 | Seeded order dataset + validation | `dataset.py` | `task01_dataset.txt` |
+| 2 | 13-document knowledge base | `kb/`, `rag/kb.py` | `task02_kb.txt` |
+| 3 | Fixed + sentence chunking, two ChromaDB collections | `rag/chunking.py`, `rag/index.py` | `task03_indexing.txt` |
+| 4 | Calibrated IDK threshold, grounded generation | `rag/generate.py` | `task04_calibrate.txt`, `task04_grounded.txt` |
+| 5 | Precision / recall for both collections | `rag/eval_retrieval.py` | `task05_retrieval_eval.txt` |
+| 6 | `check_order_status` + escalation score | `tools/order_status.py` | `task06_order_status.txt` |
+| 7 | 3-agent CrewAI crew via `.kickoff()` | `crew/crew.py`, `tools/crew_tools.py`, `llm/mock_llm.py` | `task07_crew.txt` |
+| 8 | LangChain session memory (+ fresh session) | `memory.py`, `pipeline.py` | `task08_memory_multiturn.txt`, `task08_memory_fresh.txt` |
+| 9 | Pydantic structured output | `crew/schemas.py` | `task09_schema.txt` |
+| 10 | PII masking, injection detection, groundedness | `guardrails.py` | `task10_guardrails.txt` |
+| 11 | FastAPI: `/ask`, `/add-document`, WebSocket | `api/main.py` | `task11_api.txt` |
+| 12 | JSON-Lines logs with trace IDs, PII-safe | `observability.py` | `task12_logging.txt` |
+| 13 | LLM-as-judge on 15 queries | `eval/judge.py`, `eval/testset.py` | `task13_eval.txt`, `eval/results_task13.json` |
+| 14 | Autogen review stage | `review/autogen_review.py`, `review/mock_client.py` | `task14_review.txt` |
+| 15 | Least autonomy, risk level, token budget | `governance.py` | `task15_governance.txt` |
+| 16 | Response cache | `rag/cache.py` | `task16_cache.txt` |
+| extra | Held-out re-evaluation of the improvements | `demos/eval_v2_compare.py` | `eval_v2_baseline.txt`, `eval_v2_compare.txt` |
+| extra | Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `phase1_mock_llm_spike.txt` |
+
+Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`.
+
+## Acceptance criteria checklist
+
+**Part 1: Dataset and RAG core**
+- [x] 60 orders (≥ 40); every category ≥ 3; every status ≥ 1; delayed 23.3% (10–30%); design choices at the top of this README. Evidence: [Task 1](#dataset-design-task-1-reproduce-with-python-datasetpy)
+- [x] 13 KB documents (≥ 12) covering all 12 required topics, 3–5 sentences each. Evidence: [Task 2](#knowledge-base-task-2)
+- [x] Both chunking strategies embedded and indexed into two separate collections, with sensible retrieval on a sample query in both. Evidence: [Task 3](#task-3-two-chunking-strategies-two-collections)
+- [x] Threshold calibrated on 12 in-scope + 10 out-of-scope queries (0.34, measured values stated); 5 in-scope answers + 1 out-of-scope fallback. Evidence: [Task 4](#task-4-i-dont-know-threshold-calibrated-empirically)
+- [x] P/R for both collections on the same 5 queries, with per-query arithmetic and a numbers-cited recommendation. Evidence: [Task 5](#task-5-precision--recall-per-collection-transcriptstask05_retrieval_evaltxt)
+
+**Part 2: CrewAI orchestration**
+- [x] `check_order_status` with a designed, justified `escalation_score` (0.6 × delayed + 0.4 × age; threshold 0.70 = 86.7th percentile). Evidence: [Task 6](#task-6-check_order_status-and-the-escalation-score-toolsorder_statuspy)
+- [x] Retrieval, Lookup and Composer agents; both tools invoked on different queries via `.kickoff()`. Evidence: [Task 7](#task-7-the-crew-crewcrewpy-transcriptstask07_crewtxt)
+- [x] Multi-turn memory, plus a separate fresh-session transcript showing state absent. Evidence: [Task 8](#task-8-session-memory-memorypy)
+- [x] Every crew response validated against `SupportResponse`. Evidence: [Task 9](#task-9-structured-output-crewschemaspy-transcriptstask09_schematxt)
+- [x] PII masking, injection detection and groundedness each fire on a deliberate test case. Evidence: [Task 10](#task-10-guardrails-guardrailspy-transcriptstask10_guardrailstxt)
+
+**Part 3: Evaluation, observability and FastAPI**
+- [x] 2 HTTP endpoints + 1 WebSocket with Pydantic models; survives a client disconnect mid-conversation. Evidence: [Task 11](#task-11-endpoints-apimainpy-transcriptstask11_apitxt)
+- [x] One JSON-Lines entry with a trace ID per request; no raw PII on disk. Evidence: [Task 12](#task-12-json-lines-logs-observabilitypy-transcriptstask12_loggingtxt)
+- [x] Accuracy, Grounding, Completeness and Safety for all 15 queries + averages, under `MOCK_LLM`. Evidence: [Task 13](#evaluation-task-13-transcriptstask13_evaltxt-evalresults_task13json)
+
+**Part 4: Resilience and governance**
+- [x] Autogen review approves one draft unchanged and revises another, with structured verdicts. Evidence: [Task 14](#task-14-autogen-review-stage-reviewautogen_reviewpy-transcriptstask14_reviewtxt)
+- [x] Only the Lookup Agent can call the lookup tool (demonstrated); risk classified (Medium) with justification; an oversized request is rejected by the budget cap. Evidence: [Task 15](#task-15-four-layer-governance-governancepy-transcriptstask15_governancetxt)
+- [x] Cache hit on a repeated query, with call-counter and timing evidence. Evidence: [Task 16](#task-16-response-cache-ragcachepy-transcriptstask16_cachetxt)
+- [x] `CREWAI_DISABLE_TELEMETRY=true` set; everything runs under `MOCK_LLM` with no API keys. Evidence: [offline section](#runs-fully-offline-under-mock_llm)
+
 ## Knowledge base (Task 2)
 
 `kb/` contains 13 documents of 3–5 sentences each: the 12 required topics plus an order-status glossary. The topic-to-document mapping is in `rag/kb.py::REQUIRED_TOPICS`, and the inventory is in `transcripts/task02_kb.txt`. All policies were written for this project and are **fictional**. They are internally consistent (e.g. the delivery SLA defines `delayed_shipment`, and the escalation matrix uses a Rs 5,000 threshold), but they are not Nykaa's real policies.
@@ -40,17 +112,7 @@
 - **Telemetry is disabled:** `config.py` sets `CREWAI_DISABLE_TELEMETRY=true` and `OTEL_SDK_DISABLED=true` (and ChromaDB's `ANONYMIZED_TELEMETRY=False`) at import time, before `crewai` is loaded. Every entry point imports `config` first.
 - **CrewAI execution tracing is disabled too:** `CREWAI_TRACING_ENABLED=false`, `CREWAI_TESTING=true`, and every crew is built with `tracing=False`. In crewai 1.15, `CREWAI_TRACING_ENABLED=false` alone does *not* stop the first-run trace collection or the 20-second "Share this execution trace with CrewAI?" prompt; `CREWAI_TESTING=true` does, and crewai reads that variable only in its tracing code.
 
-## Setup
-
-```bash
-py -3.12 -m venv .venv
-.venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
-pip install -r requirements.txt
-```
-
-`requirements.txt` pins `protobuf==5.29.6`. Without it, pip resolves crewai's OpenTelemetry dependencies to protobuf 7.x and silently falls back to the legacy `autogen-agentchat 0.2.x`, which has no `RoundRobinGroupChat`.
-
-Run demos from the repo root as modules, e.g. `python -m demos.task01_dataset`, or regenerate every transcript with `python run_all_demos.py`. Run the tests with `python -m pytest`.
+- **Verified, not just configured:** every demo was rerun with all outbound socket connections blocked (loopback only), and none attempted a network connection. CrewAI, ChromaDB, the cached embedding model, LangChain and Autogen were all exercised.
 
 ## RAG core (Tasks 3–5)
 
@@ -298,6 +360,19 @@ How it avoids the two silent pitfalls in the brief:
 2. **Dispatch by schema, not name.** `choose_tool()` reads each tool's declared `args_schema` and fills its *required argument names*: `record_id` comes from the order-ID pattern `NYK-\d{4,6}`, and `query` comes from the customer's question. A tool is only called if all its required arguments can be filled. Tool names are never inspected, so a tool named `rag_lookup` receives `query`.
 
 Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pytest`) and `transcripts/phase1_mock_llm_spike.txt` (real `crew.kickoff()` runs). The spike was also rerun with all outbound sockets blocked, and it made zero network attempts.
+
+## Known limitations
+
+Each limitation is discussed in its own section above; collected here for review:
+- **Extractive mock generator.** It quotes at most 2 sentences from the top-ranked document. It can quote the wrong ones (Task 13 Q02; held-out H09), and it can't recover when retrieval ranks the wrong document first (held-out H12). A real LLM generator behind the same grounding checks would remove most of this.
+- **Thin "I don't know" margin.** The calibrated gap is only about 0.02 wide (0.34 threshold). A cross-encoder re-ranker or LLM relevance check would be more robust than a single cosine cut-off.
+- **Similarity-based order/policy gate.** Very short follow-ups ("Can I still return it?") score below the 0.49 order-policy gate and get the order facts without the policy sentence.
+- **Memory carries forward order IDs only,** not topics ("what about electronics?").
+- **The escalation score ignores order status:** a delayed but already-Refunded order still escalates.
+- **The token budget is a pre-flight estimate,** recalibrated whenever prompts change, with no hard mid-run stop. Every measured request has stayed under its estimate.
+- **Documents added via `/add-document` live only in the vector index,** not in `kb/`. A full re-index drops them.
+- **The mock judge matches facts by substring,** which is more lenient than a semantic LLM judge.
+- **PII masking covers fixed-format fields only** (phone numbers, card digits). Names and free-text addresses are out of scope, as the brief allows.
 
 ## Repository layout
 

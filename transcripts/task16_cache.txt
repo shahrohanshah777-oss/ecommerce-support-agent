@@ -1,11 +1,11 @@
 # Transcript: task16_cache
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:01:23
+# Generated: 2026-10-30T19:08:23
 
 Cache key = normalize(query) -> 'what is the return window for footwear'
 
 1) Grounded-generation step called directly
-  call 1 (miss): generator calls 0 -> 1, retrievals 1 -> 2,    66.9 ms
+  call 1 (miss): generator calls 0 -> 1, retrievals 1 -> 2,    51.3 ms
   call 2 (hit) : generator calls 1 -> 1, retrievals 2 -> 2,     0.1 ms
   call 3 (hit) : '   what is the RETURN window for footwear  ' -> generator calls 1 -> 1,     0.1 ms (normalised key)
   same answer every time: True
@@ -13,8 +13,8 @@ Cache key = normalize(query) -> 'what is the return window for footwear'
 
 2) Through the full pipeline (crew + review): the RAG tool still runs, but its
    generation step is served from the cache on the repeat
-  request 1: generator calls 1 -> 2  (  254.4 ms)  rag_lookup calls=1
-  request 2: generator calls 2 -> 2  (  120.1 ms)  rag_lookup calls=1
+  request 1: generator calls 1 -> 2  (  247.0 ms)  rag_lookup calls=1
+  request 2: generator calls 2 -> 2  (  122.0 ms)  rag_lookup calls=1
   identical answers: True
 
 3) Invalidation: re-indexing (also done by POST /add-document) clears the cache

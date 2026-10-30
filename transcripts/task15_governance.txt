@@ -1,6 +1,6 @@
 # Transcript: task15_governance
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:01:06
+# Generated: 2026-10-30T19:08:06
 
 APPLICATION LAYER - least autonomy
   allow-list: {'check_order_status': ['Lookup Agent'], 'rag_lookup': ['Retrieval Agent']}

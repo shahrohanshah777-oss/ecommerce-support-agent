@@ -1,6 +1,6 @@
 # Transcript: eval_v2_compare
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:00:28
+# Generated: 2026-10-30T19:07:28
 
 Changes evaluated (designed on the Task 13 development set only):
   - small-to-big retrieval: answer from the whole top-ranked document, not only the matched sentence

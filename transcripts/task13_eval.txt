@@ -1,6 +1,6 @@
 # Transcript: task13_eval
 # MOCK_LLM=True
-# Generated: 2026-10-30T19:00:08
+# Generated: 2026-10-30T19:07:07
 
 Test set: 15 queries - all 12 required KB topics + 3 out-of-scope/edge cases | judge: LLM-as-judge prompt, MOCK_LLM=True
 
