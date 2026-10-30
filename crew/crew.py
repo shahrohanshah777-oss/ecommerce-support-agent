@@ -18,6 +18,7 @@ import config  # telemetry off before crewai import
 from crewai import Agent, Crew, Process, Task
 
 from crew.schemas import OrderInfo, SupportResponse
+from governance import enforce_least_autonomy
 from llm.mock_llm import MockLLM, MockTurn
 from rag.generate import IDK_ANSWER
 from rag.kb import split_sentences
@@ -151,33 +152,43 @@ class CrewRun:
     tool_calls: dict[str, list[str]]
     decisions: list[str] = field(default_factory=list)
     llm_calls: int = 0
+    tokens_used: int = 0
 
 
-def build_agents() -> dict[str, Agent]:
+RETRIEVAL, LOOKUP, COMPOSER = "Retrieval Agent", "Lookup Agent", "Response Composer"
+
+
+def build_agents(extra_tools: dict[str, list] | None = None) -> dict[str, Agent]:
+    """Each tool is issued to (bound to) exactly one role; governance enforces the
+    allow-list before the crew may run. `extra_tools` exists only so the Task 15
+    demo can attempt a forbidden wiring and show it being refused."""
     common = dict(max_iter=3, allow_delegation=False, verbose=False)
-    return {
+    extra = extra_tools or {}
+    agents = {
         "retrieval": Agent(
-            role="Retrieval Agent",
+            role=RETRIEVAL,
             goal="Find the Nykaa policy text that answers the customer's question.",
             backstory="Knows the Nykaa support knowledge base and only reports what it retrieves.",
             llm=MockLLM(model="mock-retrieval", responder=retrieval_responder),
-            tools=[RagLookupTool()], **common,
+            tools=[RagLookupTool(bound_role=RETRIEVAL), *extra.get("retrieval", [])], **common,
         ),
         "lookup": Agent(
-            role="Lookup Agent",
+            role=LOOKUP,
             goal="Fetch the status of the customer's order when they give an order ID.",
             backstory="The only agent allowed to query the orders system.",
             llm=MockLLM(model="mock-lookup", responder=lookup_responder),
-            tools=[OrderStatusTool()], **common,
+            tools=[OrderStatusTool(bound_role=LOOKUP), *extra.get("lookup", [])], **common,
         ),
         "composer": Agent(
-            role="Response Composer",
+            role=COMPOSER,
             goal="Combine retrieved policy and order data into one accurate, grounded reply.",
             backstory="Writes concise customer replies and never adds facts that were not provided.",
             llm=MockLLM(model="mock-composer", responder=composer_responder),
-            tools=[], **common,
+            tools=[*extra.get("composer", [])], **common,
         ),
     }
+    enforce_least_autonomy(agents.values())
+    return agents
 
 
 def run_crew(query: str) -> CrewRun:
@@ -219,4 +230,5 @@ def run_crew(query: str) -> CrewRun:
         tool_calls={tool.name: list(tool.calls) for a in agents.values() for tool in a.tools},
         decisions=[d for llm in llms for d in llm.decisions],
         llm_calls=sum(llm.call_count for llm in llms),
+        tokens_used=sum(llm.tokens_used for llm in llms),
     )

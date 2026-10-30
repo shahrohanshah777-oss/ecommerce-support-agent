@@ -184,10 +184,17 @@ class MockLLM(BaseLLM):
 
     _calls: int = PrivateAttr(default=0)
     _decisions: list[str] = PrivateAttr(default_factory=list)
+    _prompt_tokens: int = PrivateAttr(default=0)
+    _completion_tokens: int = PrivateAttr(default=0)
 
     @property
     def call_count(self) -> int:
         return self._calls
+
+    @property
+    def tokens_used(self) -> int:
+        """Prompt + completion tokens across all calls (4-chars-per-token estimate)."""
+        return self._prompt_tokens + self._completion_tokens
 
     @property
     def decisions(self) -> list[str]:
@@ -212,6 +219,12 @@ class MockLLM(BaseLLM):
         **kwargs: Any,
     ) -> str:
         self._calls += 1
+        self._prompt_tokens += self.get_input_tokens_count(messages)
+        text = self._respond(messages, from_agent, response_model)
+        self._completion_tokens += (len(text) + 3) // 4
+        return text
+
+    def _respond(self, messages, from_agent, response_model) -> str:
         msgs = as_messages(messages)
         role = getattr(from_agent, "role", "unknown")
         task_text = extract_task_text(msgs)

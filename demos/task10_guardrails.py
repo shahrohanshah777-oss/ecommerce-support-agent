@@ -77,16 +77,28 @@ def case_c_unsupported_claim() -> None:
 
     original = pipeline.run_crew
     pipeline.run_crew = hallucinating_crew  # simulate a Composer that invents a policy
+    # Isolate this guardrail: switch off the Task 14 Autogen review, which would
+    # otherwise remove the claim before the guardrail ever sees it.
+    pipeline.REVIEW_ENABLED = False
     try:
         r = pipeline.handle(query, "guard-hallucination")
     finally:
-        pipeline.run_crew = original
+        pipeline.REVIEW_ENABLED = True
+    print("  (Autogen review stage switched OFF to test this guardrail on its own)")
     print(f"  tampered draft            : ...{r.response.answer[-90:]}")
     print(f"  verdict                   : passed={r.groundedness.passed} ({r.groundedness.reason})")
     print(f"  unsupported sentence(s)   : {r.groundedness.unsupported}")
     print(f"  status / answer to user   : {r.status} / {r.answer}")
     assert honest.passed and r.status == "refused_ungrounded" and r.groundedness.unsupported == [HALLUCINATION]
-    print("  FIRED: the invented 90-day claim never reached the customer.\n")
+    print("  FIRED: the invented 90-day claim never reached the customer.")
+    try:
+        layered = pipeline.handle(query, "guard-hallucination-layered")
+    finally:
+        pipeline.run_crew = original
+    print(f"  with review ON (default)  : review approved={layered.review.approved}, guardrail "
+          f"passed={layered.groundedness.passed}, status={layered.status}")
+    print("                              -> the reviewer removed the claim first; the guardrail is the backstop.\n")
+    assert not layered.review.approved and layered.status == "answered" and HALLUCINATION not in layered.answer
 
 
 def case_d_context_does_not_support_question() -> None:

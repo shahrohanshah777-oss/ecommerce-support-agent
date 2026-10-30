@@ -1,6 +1,6 @@
 # Transcript: task04_grounded
 # MOCK_LLM=True
-# Generated: 2026-10-30T17:41:12
+# Generated: 2026-10-30T18:31:09
 
 IDK_THRESHOLD = 0.34 (calibrated in task04_calibrate) | top_k = 3
 

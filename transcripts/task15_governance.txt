@@ -1,0 +1,46 @@
+# Transcript: task15_governance
+# MOCK_LLM=True
+# Generated: 2026-10-30T18:33:53
+
+APPLICATION LAYER - least autonomy
+  allow-list: {'check_order_status': ['Lookup Agent'], 'rag_lookup': ['Retrieval Agent']}
+  Retrieval Agent    tools=['rag_lookup']
+  Lookup Agent       tools=['check_order_status']
+  Response Composer  tools=[]
+
+  BLOCKED  wiring a check_order_status tool to the Response Composer (build time)
+           -> ToolPermissionError: least-autonomy policy: agent 'Response Composer' may not use tool 'check_order_status' (allowed: ['Lookup Agent'])
+  BLOCKED  handing the Lookup Agent's own tool instance to the Retrieval Agent (build time)
+           -> ToolPermissionError: least-autonomy policy: agent 'Retrieval Agent' may not use tool 'check_order_status' (allowed: ['Lookup Agent'])
+  BLOCKED  invoking check_order_status from a tool issued to the Retrieval Agent (call time)
+           -> ToolPermissionError: least-autonomy policy: agent 'Retrieval Agent' may not use tool 'check_order_status' (allowed: ['Lookup Agent'])
+  BLOCKED  invoking an unbound check_order_status tool (call time, fail closed)
+           -> ToolPermissionError: least-autonomy policy: agent None may not use tool 'check_order_status' (allowed: ['Lookup Agent'])
+  ALLOWED  Lookup Agent -> check_order_status('NYK-1009'): {"tool": "check_order_status", "found": true, "record_id": "NYK-1009", "category...
+
+RISK CLASSIFICATION: Medium
+  Under the Low / Medium / High scheme this system is Medium risk. Its job is customer-support 
+  ticket handling, which the scheme places at Medium: it answers policy questions and reports 
+  order status, and a wrong answer can mislead a customer about a refund or return deadline, but 
+  it cannot act on that answer. It does not decide or move money: it issues no refunds, processes 
+  no payments and only reads a fabricated order table. It does handle financial-adjacent data, 
+  though (order values, card last-4 digits typed by customers), which is the trait the scheme 
+  lists under High. That is why High-tier controls are applied to that data even though the system 
+  is Medium overall: card digits and phone numbers are masked before any model, memory or log sees 
+  them; the order tool is restricted to one agent; every answer must pass a groundedness check and 
+  an independent review; and each request has a hard token budget. If the agent were ever allowed 
+  to issue refunds or change orders, it would become High risk and would need human approval for 
+  those actions. 
+
+RUNTIME LAYER - per-request token budget = 8,000 tokens (estimate = 5,000 + 6 x query tokens; illustrative cost Rs 0.25/1K tokens)
+  normal request : 'Can I cancel order NYK-1001?'
+    pre-flight   : within budget (estimated 5,042 tokens, Rs 1.2605)
+    metered      : 4,697 tokens actually used (Rs 1.1743), status=answered
+
+  oversized request: 12,087 characters (a pasted complaint log + a question)
+    pre-flight   : estimated 23,132 tokens exceeds the per-request budget of 8,000
+    status       : rejected_budget | tools invoked: none | tokens used: 0 | review/crew ran: False
+    answer       : Your message is too long for me to process in one request. Please shorten it to the key question (for example, your order ID and what you need).
+
+  same request via POST /ask -> HTTP 422 (String should have at most 2000 characters) - the API's max_length is a second, earlier cap
+  largest request the API accepts (2,000 chars): within budget (estimated 8,000)

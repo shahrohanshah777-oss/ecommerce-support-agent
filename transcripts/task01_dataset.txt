@@ -1,6 +1,6 @@
 # Transcript: task01_dataset
 # MOCK_LLM=True
-# Generated: 2026-10-30T17:04:58
+# Generated: 2026-10-30T18:30:32
 
 Seed: 42   Orders: 60
 Category weights: {'Beauty': 0.35, 'Apparel': 0.25, 'Footwear': 0.15, 'Home': 0.13, 'Electronics': 0.12}

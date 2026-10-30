@@ -11,6 +11,7 @@ import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
+from rag.cache import answer_cache
 from rag.chunking import STRATEGIES, chunk_corpus, chunk_document
 
 
@@ -67,6 +68,7 @@ def build_index() -> dict[str, int]:
             collection.delete(ids=sorted(stale))
         _upsert(collection, chunks)
         counts[name] = collection.count()
+    answer_cache.clear()
     return counts
 
 
@@ -81,6 +83,7 @@ def upsert_document(doc: dict) -> dict[str, int]:
         chunks = chunk_document(doc, name)
         _upsert(collection, chunks)
         added[name] = len(chunks)
+    answer_cache.clear()  # cached answers (incl. "I don't know") may now be stale
     return added
 
 

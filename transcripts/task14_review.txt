@@ -1,0 +1,67 @@
+# Transcript: task14_review
+# MOCK_LLM=True
+# Generated: 2026-10-30T18:33:35
+
+Team: RoundRobinGroupChat participants=['policy_reviewer', 'final_editor'] max_turns=2
+custom_message_types=[StructuredMessage[ReviewVerdict]]; final_editor output_content_type=ReviewVerdict
+
+CASE 1 - grounded draft -> approved unchanged
+  draft (Composer)   : Reward points expire 12 months after they are credited. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.
+  retrieved context  : 3 chunk(s)
+  team conversation  :
+    [user / TextMessage]
+      Review the DRAFT ANSWER before it is sent to a Nykaa customer.
+      
+      DRAFT ANSWER:
+      Reward points expire 12 months after they are credited. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.
+    [policy_reviewer / TextMessage]
+      REVIEW: all 2 sentences are supported by the retrieved context or verified facts.
+    [final_editor / StructuredMessage[ReviewVerdict]]
+      {"approved":true,"final_answer":"Reward points expire 12 months after they are credited. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.","reason":"Reviewer found every sentence supported; approved unchanged."}
+  ReviewVerdict      : approved=True
+                       final_answer='Reward points expire 12 months after they are credited. Customers earn Nykaa reward points on every delivered order at 1 point per Rs 100 spent, with higher earning rates for premium-tier members.'
+                       reason='Reviewer found every sentence supported; approved unchanged.'
+
+CASE 2 - order draft (facts from the lookup tool) -> approved unchanged
+  draft (Composer)   : Order NYK-1027 (Beauty, Rs 2,359) is currently Delivered, placed 17 days ago. It is flagged as a delayed shipment. Its escalation score is 0.83 (threshold 0.70), so it has been escalated to Level 2 support.
+  retrieved context  : 1 chunk(s)
+  team conversation  :
+    [user / TextMessage]
+      Review the DRAFT ANSWER before it is sent to a Nykaa customer.
+      
+      DRAFT ANSWER:
+      Order NYK-1027 (Beauty, Rs 2,359) is currently Delivered, placed 17 days ago. It is flagged as a delayed shipment. Its escalation score is 0.83 (threshold 0.70), so it has been escalated to Level 2 support.
+    [policy_reviewer / TextMessage]
+      REVIEW: all 3 sentences are supported by the retrieved context or verified facts.
+    [final_editor / StructuredMessage[ReviewVerdict]]
+      {"approved":true,"final_answer":"Order NYK-1027 (Beauty, Rs 2,359) is currently Delivered, placed 17 days ago. It is flagged as a delayed shipment. Its escalation score is 0.83 (threshold 0.70), so it has been escalated to Level 2 support.","reason":"Reviewer found every sentence supported; approved unchanged."}
+  ReviewVerdict      : approved=True
+                       final_answer='Order NYK-1027 (Beauty, Rs 2,359) is currently Delivered, placed 17 days ago. It is flagged as a delayed shipment. Its escalation score is 0.83 (threshold 0.70), so it has been escalated to Level 2 support.'
+                       reason='Reviewer found every sentence supported; approved unchanged.'
+
+CASE 3 - draft with a deliberately injected ungrounded claim -> revised
+  draft (Composer)   : Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Home products can also be exchanged for free within 60 days.
+  retrieved context  : 3 chunk(s)
+  team conversation  :
+    [user / TextMessage]
+      Review the DRAFT ANSWER before it is sent to a Nykaa customer.
+      
+      DRAFT ANSWER:
+      Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Home products can also be exchanged for free within 60 days.
+    [policy_reviewer / TextMessage]
+      REVIEW: 1/2 sentences supported.
+      UNSUPPORTED: Home products can also be exchanged for free within 60 days.
+    [final_editor / StructuredMessage[ReviewVerdict]]
+      {"approved":false,"final_answer":"Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days.","reason":"Removed 1 unsupported sentence(s): Home products can also be exchanged for free within 60 days."}
+  ReviewVerdict      : approved=False
+                       final_answer='Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days.'
+                       reason='Removed 1 unsupported sentence(s): Home products can also be exchanged for free within 60 days.'
+
+CASE 3 again, end to end through pipeline.handle() with a tampering Composer:
+  draft     : Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Home products can also be exchanged for free within 60 days.
+  review    : approved=False (Removed 1 unsupported sentence(s): Home products can also be exchanged for free within 60 days.)
+  guardrail : passed=True
+  delivered : [answered] Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days.
+
+The review stage repaired the draft, so the customer gets the corrected answer instead of a refusal;
+the output groundedness guardrail (Task 10) still runs afterwards as the last line of defence.

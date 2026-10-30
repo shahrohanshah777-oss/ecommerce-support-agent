@@ -56,4 +56,14 @@ IDK_THRESHOLD = 0.34
 ORDER_POLICY_MIN_SIM = 0.49
 
 # --- Governance --------------------------------------------------------------
-TOKEN_BUDGET = 2000  # max estimated tokens per request
+# Per-request token budget (runtime governance layer), calibrated from metered
+# usage of the full pipeline (crew + review) on the 15 eval queries and padded
+# variants: short queries used 3,245-4,697 tokens; each extra query token added
+# ~4.5 tokens (the query is repeated across several model calls).
+#   estimate = BUDGET_OVERHEAD_TOKENS + BUDGET_QUERY_REPEATS * query_tokens
+# Both constants are rounded up, so every measured request used fewer tokens than
+# estimated. 8,000 admits queries up to ~500 tokens (~2,000 chars, the API limit).
+TOKEN_BUDGET = 8_000
+BUDGET_OVERHEAD_TOKENS = 5_000
+BUDGET_QUERY_REPEATS = 6
+COST_PER_1K_TOKENS_INR = 0.25  # illustrative rate for cost reporting; MOCK_LLM itself costs nothing

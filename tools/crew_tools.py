@@ -1,6 +1,9 @@
 """CrewAI tool wrappers for the RAG core (Tasks 3-5) and the order lookup (Task 6).
 
-Each tool records its invocations in `calls` so demos can prove it actually ran.
+Each tool records its invocations in `calls` so demos can prove it actually ran,
+and is bound to the agent role it was issued to: `_run` calls
+governance.authorize() first, so a tool wired to the wrong agent fails closed
+(Task 15 least autonomy).
 """
 from __future__ import annotations
 
@@ -9,6 +12,7 @@ import json
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from governance import authorize
 from rag.generate import answer
 from tools.order_status import check_order_status
 
@@ -29,8 +33,10 @@ class RagLookupTool(BaseTool):
     )
     args_schema: type[BaseModel] = RagLookupArgs
     calls: list[str] = Field(default_factory=list, exclude=True)
+    bound_role: str | None = Field(default=None, exclude=True)
 
     def _run(self, query: str) -> str:
+        authorize(self.name, self.bound_role)
         self.calls.append(query)
         r = answer(query)
         return json.dumps(
@@ -54,7 +60,9 @@ class OrderStatusTool(BaseTool):
     )
     args_schema: type[BaseModel] = OrderStatusArgs
     calls: list[str] = Field(default_factory=list, exclude=True)
+    bound_role: str | None = Field(default=None, exclude=True)
 
     def _run(self, record_id: str) -> str:
+        authorize(self.name, self.bound_role)  # only the Lookup Agent may read order data
         self.calls.append(record_id)
         return json.dumps({"tool": self.name, **check_order_status(record_id)})

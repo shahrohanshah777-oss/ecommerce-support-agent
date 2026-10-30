@@ -1,6 +1,6 @@
 # Transcript: phase1_mock_llm_spike
 # MOCK_LLM=True
-# Generated: 2026-10-30T17:00:05
+# Generated: 2026-10-30T18:30:31
 
 CASE A - policy question -> rag_lookup(query)
     llm decision : [Support Agent] Action rag_lookup {'query': 'What is the return window for footwear?'}

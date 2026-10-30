@@ -14,6 +14,7 @@ import numpy as np
 from pydantic import BaseModel
 
 import config
+from rag.cache import answer_cache, normalize
 from rag.index import embed, search
 from rag.kb import split_sentences
 from rag.lexical import keyword_overlap
@@ -114,8 +115,24 @@ def policy_query(query: str) -> str:
     return " ".join(re.sub(config.ORDER_ID_PATTERN, " ", query, flags=re.IGNORECASE).split())
 
 
-def answer(query: str, collection: str = config.RECOMMENDED_COLLECTION, k: int = config.TOP_K) -> GroundedAnswer:
+retrieval_calls = 0  # how many times answer() actually hit the vector index
+
+
+def answer(query: str, collection: str = config.RECOMMENDED_COLLECTION, k: int = config.TOP_K,
+           use_cache: bool = True) -> GroundedAnswer:
     original, query = query, policy_query(query)
+    key = (normalize(query), collection, k)
+    if use_cache and (cached := answer_cache.get(key)) is not None:
+        return cached.model_copy(update={"query": original}, deep=True)
+    result = _answer_uncached(original, query, collection, k)
+    if use_cache:
+        answer_cache.put(key, result.model_copy(deep=True))
+    return result
+
+
+def _answer_uncached(original: str, query: str, collection: str, k: int) -> GroundedAnswer:
+    global retrieval_calls
+    retrieval_calls += 1
     hits = search(query, collection, k)
     chunks = [RetrievedChunk(**{key: h[key] for key in ("id", "doc_id", "title", "text", "similarity")}) for h in hits]
     top = chunks[0].similarity if chunks else 0.0
