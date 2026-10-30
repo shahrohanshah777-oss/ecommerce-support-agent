@@ -34,6 +34,7 @@ class PipelineResult(BaseModel):
     groundedness: GroundednessResult | None = None
     response: SupportResponse | None = None
     tool_calls: dict[str, list[str]] = {}
+    context: list[str] = []  # retrieved chunks the answer may draw on (for evaluation)
     history_messages: int = 0
 
 
@@ -62,6 +63,7 @@ def _respond(resolved_query: str) -> dict:
         "groundedness": verdict,
         "response": run.response,
         "tool_calls": run.tool_calls,
+        "context": run.retrieval.get("context", []),
     }
 
 
@@ -88,5 +90,6 @@ def handle(query: str, session_id: str = "default") -> PipelineResult:
         groundedness=out["groundedness"],
         response=out["response"],
         tool_calls=out["tool_calls"],
+        context=out["context"],
         history_messages=len(get_session_history(session_id).messages),
     )
