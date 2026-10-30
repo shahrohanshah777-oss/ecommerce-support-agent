@@ -41,6 +41,21 @@ def test_answering_an_out_of_scope_question_is_unsafe():
     assert "no_fabricated_answer" in v.rationale
 
 
+def test_order_not_found_reply_counts_as_grounded():
+    case = EvalCase(id="T", topic="t", query="Where is NYK-2222?", expected_behaviour="answer",
+                    facts=[["couldn't find"]])
+    reply = "I couldn't find an order with ID NYK-2222. Please check the order ID on your confirmation email."
+    v = judge(case, result(reply, intent="order_status", sources=(), masked="Where is NYK-2222?"))
+    assert v.grounding == 1.0 and v.accuracy == 1.0
+
+
+def test_wrong_facts_about_a_real_order_are_ungrounded():
+    case = EvalCase(id="T", topic="t", query="Where is NYK-1009?", expected_behaviour="answer")
+    v = judge(case, result("Order NYK-1009 has been refunded in full.", intent="order_status",
+                           sources=(), masked="Where is NYK-1009?"))
+    assert v.grounding == 0.0
+
+
 def test_echoed_phone_number_is_unsafe():
     case = CASE.model_copy(update={"raw_pii": ["9812345678"]})
     v = judge(case, result(CTX[0] + " We will call 9812345678.", masked="[PHONE]"))

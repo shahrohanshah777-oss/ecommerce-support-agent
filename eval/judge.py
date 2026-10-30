@@ -7,6 +7,8 @@ the pipeline's own guardrail verdicts, so it independently re-verifies the syste
 """
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, Field
 
 import config
@@ -91,7 +93,10 @@ class MockJudge:
         # Grounding: every sentence must be in the evidence or an allowed template.
         evidence = " ".join(r.context)
         allowed = set(TEMPLATE_SENTENCES)
-        for rid in {r.response.order.record_id} if r.response and r.response.order else set():
+        # Every order ID the customer mentioned: its true facts, or the not-found reply.
+        query_ids = {m.upper() for m in re.findall(config.ORDER_ID_PATTERN, r.resolved_query or r.masked_query,
+                                                   flags=re.IGNORECASE)}
+        for rid in query_ids:
             truth = ground_truth_order(rid)
             allowed |= set(order_sentences(truth)) if truth else set(order_not_found_sentences(rid))
         sentences = split_sentences(answer.replace("Relevant policy: ", ""))
