@@ -1,0 +1,46 @@
+name: tests
+
+# Proves the project reproduces on a clean Linux machine: install, run the test
+# suite and regenerate every demo transcript, all under MOCK_LLM with no API keys.
+# The only network use is the one-time download of dependencies and the local
+# embedding model (cached between runs).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MOCK_LLM: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install CPU-only PyTorch (avoids the multi-GB CUDA build)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-all-MiniLM-L6-v2
+
+      - name: Download the embedding model (one-time)
+        run: python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
+      - name: Run the test suite
+        run: python -m pytest -q
+
+      - name: Regenerate every demo transcript
+        run: python run_all_demos.py
