@@ -1,0 +1,36 @@
+# Transcript: task08_memory_multiturn
+# MOCK_LLM=True
+# Generated: 2026-10-30T17:52:16
+
+Session session-multiturn - one conversation, three turns
+
+--- Turn 1 | history before: 0 messages
+User           : Hi, where is my order NYK-1009?
+Resolved query : Hi, where is my order NYK-1009?   (unchanged)
+Tools invoked  : {'rag_lookup': ['Hi, where is my order NYK-1009?'], 'check_order_status': ['NYK-1009']}
+Order in reply : NYK-1009
+Assistant      : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its escalation score is 0.80 (threshold 0.70), so it has been escalated to Level 2 support.
+
+--- Turn 2 | history before: 2 messages
+User           : How many days do I have to return it?
+Resolved query : How many days do I have to return it? NYK-1009   <- order ID filled in from memory
+Tools invoked  : {'rag_lookup': ['How many days do I have to return it? NYK-1009'], 'check_order_status': ['NYK-1009']}
+Order in reply : NYK-1009
+Assistant      : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its escalation score is 0.80 (threshold 0.70), so it has been escalated to Level 2 support. Relevant policy: Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Beauty products can be returned within 7 days only if the seal is unbroken and the product is unused, because opened cosmetics cannot be resold for hygiene reasons.
+
+--- Turn 3 | history before: 4 messages
+User           : Is it going to be escalated?
+Resolved query : Is it going to be escalated? NYK-1009   <- order ID filled in from memory
+Tools invoked  : {'rag_lookup': ['Is it going to be escalated? NYK-1009'], 'check_order_status': ['NYK-1009']}
+Order in reply : NYK-1009
+Assistant      : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shipment. Its escalation score is 0.80 (threshold 0.70), so it has been escalated to Level 2 support.
+
+Stored history for session session-multiturn (InMemoryChatMessageHistory):
+  human: Hi, where is my order NYK-1009?
+  ai   : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shi
+  human: How many days do I have to return it?
+  ai   : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shi
+  human: Is it going to be escalated?
+  ai   : Order NYK-1009 (Footwear, Rs 5,309) is currently Delivered, placed 15 days ago. It is flagged as a delayed shi
+
+PASS: turns 2 and 3 never mention the order ID, yet both answer about NYK-1009 from memory.

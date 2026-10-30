@@ -11,6 +11,7 @@ functions below are the deterministic stand-ins for what each agent's LLM writes
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 
 import config  # telemetry off before crewai import
@@ -19,6 +20,7 @@ from crewai import Agent, Crew, Process, Task
 from crew.schemas import OrderInfo, SupportResponse
 from llm.mock_llm import MockLLM, MockTurn
 from rag.generate import IDK_ANSWER
+from rag.kb import split_sentences
 from tools.crew_tools import OrderStatusTool, RagLookupTool
 from tools.order_status import ESCALATION_THRESHOLD
 
@@ -51,7 +53,48 @@ def json_objects(text: str) -> list[dict]:
     return found
 
 
-def compose_response(retrieval: dict, lookup: dict) -> SupportResponse:
+ASK_FOR_ORDER_ID = ("If your question is about a specific order, please share its order ID "
+                    "(for example NYK-1234) so I can check it.")
+_REFERS_TO_AN_ORDER = re.compile(
+    r"\b(my|this|that|the) (order|package|parcel|item|purchase)\b|\b(return|cancel|track|exchange) it\b",
+    re.IGNORECASE,
+)
+
+
+def order_sentences(order: OrderInfo) -> list[str]:
+    """Customer-facing facts about one order, rendered only from the lookup record."""
+    days = order.days_since_created
+    when = "today" if days == 0 else "1 day ago" if days == 1 else f"{days} days ago"
+    out = [f"Order {order.record_id} ({order.category}, Rs {order.order_value_inr:,}) "
+           f"is currently {order.status}, placed {when}."]
+    if order.delayed_shipment:
+        out.append("It is flagged as a delayed shipment.")
+    if order.escalate:
+        out.append(f"Its escalation score is {order.escalation_score:.2f} (threshold "
+                   f"{ESCALATION_THRESHOLD:.2f}), so it has been escalated to Level 2 support.")
+    else:
+        out.append(f"Its escalation score is {order.escalation_score:.2f}, below the "
+                   f"{ESCALATION_THRESHOLD:.2f} threshold, so no escalation is needed.")
+    return out
+
+
+def order_not_found_sentences(record_id: str) -> list[str]:
+    return [f"I couldn't find an order with ID {record_id}.",
+            "Please check the order ID on your confirmation email."]
+
+
+def template_sentences(order: OrderInfo | None, missing_id: str | None) -> list[str]:
+    """Every sentence the Composer may write that does not come from the KB.
+    Used by the output groundedness check (guardrails.check_groundedness)."""
+    allowed = split_sentences(IDK_ANSWER) + split_sentences(ASK_FOR_ORDER_ID)
+    if order is not None:
+        allowed += order_sentences(order)
+    if missing_id:
+        allowed += order_not_found_sentences(missing_id)
+    return allowed
+
+
+def compose_response(retrieval: dict, lookup: dict, query: str = "") -> SupportResponse:
     """Deterministic composition of the two upstream outputs into one draft."""
     parts, sources, order = [], [], None
     policy_ok = bool(retrieval.get("grounded"))
@@ -60,23 +103,10 @@ def compose_response(retrieval: dict, lookup: dict) -> SupportResponse:
         intent = "order_status"
         if lookup.get("found"):
             order = OrderInfo(**{k: lookup[k] for k in OrderInfo.model_fields})
-            days = order.days_since_created
-            when = "today" if days == 0 else "1 day ago" if days == 1 else f"{days} days ago"
-            text = (f"Order {order.record_id} ({order.category}, Rs {order.order_value_inr:,}) "
-                    f"is currently {order.status}, placed {when}.")
-            if order.delayed_shipment:
-                text += " It is flagged as a delayed shipment."
-            if order.escalate:
-                text += (f" Its escalation score is {order.escalation_score:.2f} (threshold "
-                         f"{ESCALATION_THRESHOLD:.2f}), so it has been escalated to Level 2 support.")
-            else:
-                text += (f" Its escalation score is {order.escalation_score:.2f}, below the "
-                         f"{ESCALATION_THRESHOLD:.2f} threshold, so no escalation is needed.")
-            parts.append(text)
+            parts += order_sentences(order)
             sources.append("orders_dataset")
         else:
-            parts.append(f"I couldn't find an order with ID {lookup['record_id']}. "
-                         "Please check the order ID on your confirmation email.")
+            parts += order_not_found_sentences(lookup["record_id"])
         # Pure status questions match the KB only weakly; attach policy only for a
         # real order when the customer clearly asked a policy question too.
         strong = retrieval.get("top_similarity", 0.0) >= config.ORDER_POLICY_MIN_SIM
@@ -87,6 +117,8 @@ def compose_response(retrieval: dict, lookup: dict) -> SupportResponse:
         intent = "policy"
         parts.append(retrieval["answer"])
         sources += retrieval.get("sources", [])
+        if _REFERS_TO_AN_ORDER.search(query):  # "Can I return it?" with no order on record
+            parts.append(ASK_FOR_ORDER_ID)
     else:
         intent = "out_of_scope"
         parts.append(IDK_ANSWER)
@@ -106,7 +138,7 @@ def composer_responder(turn: MockTurn) -> str:
     blobs = json_objects(turn.context or "")
     retrieval = next((b for b in blobs if "grounded" in b), {"grounded": False, "top_similarity": 0.0})
     lookup = next((b for b in blobs if "found" in b), NO_ORDER_ID)
-    return compose_response(retrieval, lookup).model_dump_json()
+    return compose_response(retrieval, lookup, turn.query).model_dump_json()
 
 
 # --- Crew --------------------------------------------------------------------
