@@ -20,10 +20,11 @@ os.environ.setdefault("CREWAI_TESTING", "true")
 # --- Paths -------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent
 KB_DIR = ROOT / "kb"
-CHROMA_DIR = ROOT / "chroma_db"
+# Overridable so demos that add documents can use a scratch index.
+CHROMA_DIR = Path(os.environ.get("NYKAA_CHROMA_DIR", ROOT / "chroma_db"))
 TRANSCRIPTS_DIR = ROOT / "transcripts"
 LOGS_DIR = ROOT / "logs"
-REQUEST_LOG = LOGS_DIR / "requests.jsonl"
+REQUEST_LOG = Path(os.environ.get("NYKAA_REQUEST_LOG", LOGS_DIR / "requests.jsonl"))
 
 # --- LLM mode ----------------------------------------------------------------
 # Graded transcripts run with MOCK_LLM=true (default): deterministic, no API keys.

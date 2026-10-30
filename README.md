@@ -156,6 +156,30 @@ One `InMemoryChatMessageHistory` per `session_id`, wrapped around the crew with 
 
 The order facts are checked against the **tool's raw output** (`CrewRun.lookup`), not against the Composer's draft, so a Composer that altered an order's status or amount would also be refused. Out of scope by design: customer names and free-text addresses (no reliable pattern for a keyless regex masker). Demos use only fabricated phone and card numbers.
 
+## FastAPI deployment and structured logging (Tasks 11, 12)
+
+Run the server: `uvicorn api.main:app --port 8000` (interactive docs at `/docs`).
+
+### Task 11: endpoints (`api/main.py`, `transcripts/task11_api.txt`)
+| Endpoint | Models | Behaviour |
+|---|---|---|
+| `GET /health` | n/a | liveness, `MOCK_LLM` flag, chunk counts |
+| `POST /ask` | `AskRequest` → `AskResponse` | runs `pipeline.handle()`; returns answer, intent, sources, typed `OrderInfo`, escalation, PII/injection findings, `trace_id`, latency |
+| `POST /add-document` | `AddDocumentRequest` → `AddDocumentResponse` | masks PII in the document, then upserts it into **both** collections; answerable immediately |
+| `WS /ws/chat/{session_id}` | `WsMessage` per frame | real-time multi-turn chat sharing the session memory; crew runs in a thread pool so other clients aren't blocked |
+
+The demo runs a **real uvicorn server on 127.0.0.1** with a scratch Chroma index and log file (`NYKAA_CHROMA_DIR` / `NYKAA_REQUEST_LOG`), so adding a document can't change the calibrated index. It shows:
+- **Validation:** 422s for an empty query and a malformed document.
+- **`/add-document`:** "Do you offer gift wrapping?" goes from the IDK fallback to an answer sourced from the newly added `14_gift_wrapping`.
+- **WebSocket memory:** a 2-turn WebSocket chat where "return it" is resolved from memory.
+- **Bad frames:** a malformed frame gets an error reply without closing the connection.
+- **Disconnects:** a client that **sends a message and then kills its TCP connection without reading the reply**. The server catches `WebSocketDisconnect` (close code 1006), logs it, and keeps serving: a second WebSocket client and `GET /health` both succeed afterwards.
+
+### Task 12: JSON-Lines logs (`observability.py`, `transcripts/task12_logging.txt`)
+Every HTTP request (middleware) and every WebSocket message produces **one JSON object per line**: `@timestamp`, `service`, `event`, unique `trace_id` (also returned as the `X-Trace-ID` header), `latency_ms`, method/path/status, `session_id`, the **masked** query, PII/injection findings, pipeline status, intent and tool-call counts. WebSocket connects and disconnects are logged too (with close code). Validation failures are logged with path and status only; request bodies are never logged raw.
+
+**PII never reaches disk:** the query that gets logged is the same masked text the model saw. As a second safety net, `log_event()` runs every string field through `mask_pii()` before writing. The demo searches the raw log file for the phone and card digits it sent and finds none, only `[PHONE]` / `[CARD_LAST4]`.
+
 ## The mock LLM (`llm/mock_llm.py`)
 
 `MockLLM` extends `crewai.llms.base_llm.BaseLLM` and drives CrewAI's text ReAct loop deterministically (`supports_function_calling()` returns `False`). On each call it either emits one `Action` / `Action Input` tool step or a `Final Answer`. Per-agent `responder` hooks write the final-answer text.
@@ -182,7 +206,8 @@ Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pyt
 | `memory.py` | Task 8: per-session LangChain chat history |
 | `guardrails.py` | Task 10: PII masking, injection detection, groundedness check |
 | `review/` | Task 14: Autogen review stage |
-| `api/` | Tasks 11–12: FastAPI app and JSON-Lines logging |
+| `api/` | Task 11: FastAPI app (HTTP + WebSocket) |
+| `observability.py` | Task 12: JSON-Lines structured logging with PII scrubbing |
 | `eval/` | Task 13: LLM-as-judge evaluation |
 | `demos/` | One runnable script per task |
 | `transcripts/` | Saved output of every demo (graded evidence) |
