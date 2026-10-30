@@ -1,6 +1,6 @@
 # Transcript: task04_grounded
 # MOCK_LLM=True
-# Generated: 2026-10-30T17:19:31
+# Generated: 2026-10-30T17:41:12
 
 IDK_THRESHOLD = 0.34 (calibrated in task04_calibrate) | top_k = 3
 
@@ -11,13 +11,13 @@ Collection: kb_sentence
 [IN-SCOPE ] Q: What is the return window for electronics?
   retrieved: 01_return_window(0.494), 04_reverse_pickup(0.356), 10_damaged_item_claims(0.355)
   top1=0.494 vs threshold 0.34 -> grounded=True
-  A: Claims raised after 48 hours are treated as regular returns under the normal return window. Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
-  sources: ['10_damaged_item_claims', '01_return_window']
+  A: Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
+  sources: ['01_return_window']
 
 [IN-SCOPE ] Q: How long does a COD refund take to reach my bank account?
   retrieved: 02_cod_refund_timelines(0.792), 02_cod_refund_timelines(0.731), 02_cod_refund_timelines(0.641)
   top1=0.792 vs threshold 0.34 -> grounded=True
-  A: If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline. The customer can take the refund as Nykaa Wallet credit, which arrives within 24 hours of the quality check, or as a bank transfer by NEFT or IMPS, which arrives within 5 to 7 business days.
+  A: If the bank details are wrong the transfer fails, and it is retried once the customer updates the details, which restarts the 5 to 7 business day timeline.
   sources: ['02_cod_refund_timelines']
 
 [IN-SCOPE ] Q: Can I still cancel my order if the shipment is delayed?
@@ -62,7 +62,7 @@ Collection: kb_fixed
 [IN-SCOPE ] Q: Can I still cancel my order if the shipment is delayed?
   retrieved: 06_order_cancellation(0.639), 06_order_cancellation(0.618), 06_order_cancellation(0.492)
   top1=0.639 vs threshold 0.34 -> grounded=True
-  A: Once an order has Shipped it can no longer be cancelled, unless the shipment has been flagged as delayed,...
+  A: ...be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives.
   sources: ['06_order_cancellation']
 
 [IN-SCOPE ] Q: How many reward points can I use on an order?

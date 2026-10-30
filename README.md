@@ -74,9 +74,9 @@ Top-1 cosine similarity measured on 12 in-scope and 10 out-of-scope queries (`tr
 
 **Chosen threshold: `IDK_THRESHOLD = 0.34`**, which sits inside the observed gap for both collections. The common tutorial presets would be wrong here: 0.5 wrongly refuses 2/12 in-scope queries, 0.6 refuses 6–7/12, and 0.7 refuses 11–12/12. **Caveat:** the gap is only about 0.02 wide. The closest cases are "Do you ship to Dubai?" (in-scope, 0.35) and "Write a Python function to reverse a linked list" (out-of-scope, 0.33, which matches *reverse pickup* on one word). In production I'd add a cross-encoder re-ranker or an LLM relevance check rather than rely on a single cosine cut-off.
 
-**Grounded generation** (`rag/generate.py`, `transcripts/task04_grounded.txt`): retrieve top-3 chunks. If top-1 < 0.34, return the fallback. Otherwise, under `MOCK_LLM`, an **extractive** generator quotes the 1–2 retrieved sentences that best match the query (dense cosine + 0.4 × IDF-weighted keyword overlap). Every quoted sentence is verbatim retrieved text, and the demo asserts this. The demo answers 5 in-scope queries and refuses 1 out-of-scope query ("book me a train ticket", top-1 0.295 / 0.331) on both collections.
+**Grounded generation** (`rag/generate.py`, `transcripts/task04_grounded.txt`): retrieve top-3 chunks. If top-1 < 0.34, return the fallback. Otherwise, under `MOCK_LLM`, an **extractive** generator quotes the 1–2 retrieved sentences that best match the query (dense cosine + 0.4 × IDF-weighted keyword overlap, both computed on `"<title>: <sentence>"`). Every quoted sentence is verbatim retrieved text, and the demo asserts this. The demo answers 5 in-scope queries and refuses 1 out-of-scope query ("book me a train ticket", top-1 0.295 / 0.331) on both collections.
 
-*Honest limitations:* the selector's keyword weight was set while looking at these 5 demo queries, so they aren't a held-out test (the 15 Task 13 queries are). One query shows a real **retrieval** miss: for "What is the return window for electronics?", the right document is retrieved top-1, but the sentence that actually holds the answer ("…Electronics within 7 days") isn't in the top-3 chunks. The answer is therefore grounded but incomplete.
+*Honest limitations:* the selector's keyword weight was set while looking at these 5 demo queries, so they aren't a held-out test (the 15 Task 13 queries are). Two answers are grounded but incomplete. For "What is the return window for electronics?" this is a real **retrieval** miss: the right document is retrieved top-1, but the sentence that holds the answer ("…Electronics within 7 days") isn't in the top-3 chunks. For the COD-refund question, the selector quotes the bank-details retry sentence ("…restarts the 5 to 7 business day timeline") rather than the main timeline sentence. Both show the limits of a keyword-plus-embedding extractive mock, which a real LLM generator would not have.
 
 ### Task 5: precision / recall per collection (`transcripts/task05_retrieval_eval.txt`)
 Top-3 chunks → parent `doc_id` → de-duplicated → scored against hand-labelled relevant documents.
@@ -91,6 +91,43 @@ Top-3 chunks → parent `doc_id` → de-duplicated → scored against hand-label
 | **Mean** | | **0.767** | **0.900** | **0.767** | **1.000** |
 
 **Recommendation: deploy sentence-based chunking (`kb_sentence`).** Both strategies have the same mean document-level precision (0.767), but sentence chunks reach a mean recall of 1.000 versus 0.900. On the two-document question about cancelling a delayed shipment, the overlapping fixed windows filled all three top-3 slots with copies of the cancellation policy, while sentence chunks left room for the delivery-SLA document. Sentence chunks also give cleaner answers: the extractive generator quotes complete sentences instead of window fragments like "…within 7". Since the recall gap rests on one query out of five, I'd re-check it on a larger set before production. The crew (Part 2) uses `config.RECOMMENDED_COLLECTION = "kb_sentence"`.
+
+## CrewAI orchestration (Tasks 6, 7, 9)
+
+### Task 6: `check_order_status` and the escalation score (`tools/order_status.py`)
+`check_order_status(record_id) -> dict` returns the order's `status`, `order_value_inr`, category, age, delay flag, `escalation_score` and an `escalate` boolean. Unknown IDs return `{"found": false, ...}`.
+
+```
+escalation_score = 0.6 × delayed_shipment + 0.4 × (days_since_created / 30)
+escalate  ⇔  escalation_score ≥ 0.70
+```
+
+* **Design:** a delayed shipment is the dominant signal. A non-delayed order tops out at 0.40, so it can never escalate on age alone. Among delayed orders, age breaks ties: the longer a late order has been open, the more urgent it is.
+* **Threshold 0.70** means *delayed and `days_since_created` ≥ 8*, i.e. late and past the KB's 7-day upper delivery SLA. In the generated data, the 14 delayed orders' ages form two clusters (**3–6 days** and **12–24 days**), and 0.70 falls exactly in the gap (scores 0.680 vs 0.760). The threshold is the **86.7th percentile** of `escalation_score` in my data and flags **8/60 orders (13.3%)**, a manageable Level-2 queue (`transcripts/task06_order_status.txt`).
+* *Possible extension:* the score ignores status, so a delayed order that has already been Refunded still scores high. A production version would down-weight terminal statuses.
+
+### Task 7: the crew (`crew/crew.py`, `transcripts/task07_crew.txt`)
+Three agents run sequentially via `crew.kickoff()`. Each has its own `MockLLM` and only the tools it needs:
+
+| Agent | Tool | Output |
+|---|---|---|
+| Retrieval Agent | `rag_lookup` (Task 4 grounded generation on `kb_sentence`) | JSON: answer, grounded, sources, context |
+| Lookup Agent | `check_order_status` | JSON order record, or `found: false` |
+| Response Composer | none | `SupportResponse` draft (Task 9) |
+
+The Retrieval and Lookup tasks use `context=[]`, so an order ID can only come from the customer's own query, never from another agent's output. The demo shows the **RAG tool alone** on a policy question, the **lookup tool** on order questions, **both** on "Can I cancel my order NYK-1004?", a not-found order, and an out-of-scope fallback. Each run prints the agents' ReAct decisions and the tools' own invocation logs.
+
+Two refinements that came out of the demo, and are documented in the transcript:
+* **Order IDs are stripped from the retrieval query** (`rag.generate.policy_query`). They never occur in the KB and only added noise. Before this fix, "Can I cancel my order NYK-1004?" quoted the out-of-stock sentence.
+* **Policy is attached to an order answer only when retrieval is strong** (`ORDER_POLICY_MIN_SIM = 0.49`), calibrated the same way as the IDK threshold. Pure status questions ("Where is my order NYK-1009?") top out at 0.480, while order + policy questions start at 0.508. Without this, status answers got an irrelevant policy sentence appended.
+
+### Task 9: structured output (`crew/schemas.py`, `transcripts/task09_schema.txt`)
+`SupportResponse` (`answer`, `intent ∈ {policy, order_status, out_of_scope}`, `grounded`, `sources`, `order: OrderInfo | None`, `escalate`, `retrieval_top_similarity`; `extra="forbid"`, bounded numbers, an ID pattern) is enforced at three points:
+1. The Composer task declares `output_pydantic=SupportResponse`, and CrewAI passes it to the LLM as `response_model` (the response-format contract).
+2. `MockLLM` validates its own final answer against `response_model` before returning it, as a real structured-output API would.
+3. `run_crew()` re-validates the result in code with `SupportResponse.model_validate(...)`.
+
+The demo validates 5 different crew responses and shows the schema **rejecting** an unknown intent, `escalation_score = 1.5`, an empty answer and a hallucinated extra field.
 
 ## The mock LLM (`llm/mock_llm.py`)
 

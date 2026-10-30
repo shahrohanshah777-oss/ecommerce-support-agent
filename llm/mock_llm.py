@@ -239,5 +239,9 @@ class MockLLM(BaseLLM):
             tool_name=tool_name,
         )
         answer = (self.responder or default_responder)(turn)
+        if response_model is not None:
+            # Structured output: like a real response_format API, never emit
+            # text that does not conform to the requested schema.
+            answer = response_model.model_validate_json(answer).model_dump_json()
         self._decisions.append(f"[{role}] Final Answer ({len(answer)} chars)")
         return f"Thought: I now know the final answer\nFinal Answer: {answer}"

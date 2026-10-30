@@ -8,6 +8,8 @@ IDK_THRESHOLD on top-1 cosine similarity.
 """
 from __future__ import annotations
 
+import re
+
 import numpy as np
 from pydantic import BaseModel
 
@@ -72,12 +74,11 @@ class MockGenerator:
                     candidates.append((s, c.doc_id, c.title))
         if not candidates:  # every piece was a scrap: fall back to the best chunk itself
             candidates = [(chunks[0].text, chunks[0].doc_id, chunks[0].title)]
-        # Dense score uses the same "<title>: <text>" header as indexing; the
-        # keyword term separates sentences that share a document title.
-        vecs = np.array(embed([query] + [f"{t}: {s}" for s, _, t in candidates]))
-        scores = vecs[1:] @ vecs[0] + LEXICAL_WEIGHT * np.array(
-            [keyword_overlap(query, s) for s, _, _ in candidates]
-        )
+        # Both scores see the same "<title>: <text>" form used at indexing time;
+        # the keyword term separates sentences that share a document title.
+        headed = [f"{t}: {s}" for s, _, t in candidates]
+        vecs = np.array(embed([query] + headed))
+        scores = vecs[1:] @ vecs[0] + LEXICAL_WEIGHT * np.array([keyword_overlap(query, h) for h in headed])
         order = [int(i) for i in np.argsort(-scores)]
         picked = [order[0]]
         for i in order[1:]:
@@ -108,11 +109,17 @@ def _tidy(fragment: str) -> str:
 generator = MockGenerator()
 
 
+def policy_query(query: str) -> str:
+    """Order IDs never occur in the KB; they only add noise to retrieval and keyword scoring."""
+    return " ".join(re.sub(config.ORDER_ID_PATTERN, " ", query, flags=re.IGNORECASE).split())
+
+
 def answer(query: str, collection: str = config.RECOMMENDED_COLLECTION, k: int = config.TOP_K) -> GroundedAnswer:
+    original, query = query, policy_query(query)
     hits = search(query, collection, k)
     chunks = [RetrievedChunk(**{key: h[key] for key in ("id", "doc_id", "title", "text", "similarity")}) for h in hits]
     top = chunks[0].similarity if chunks else 0.0
-    base = dict(query=query, collection=collection, top_similarity=top,
+    base = dict(query=original, collection=collection, top_similarity=top,
                 threshold=config.IDK_THRESHOLD, context=chunks)
 
     if top < config.IDK_THRESHOLD:

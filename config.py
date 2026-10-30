@@ -47,6 +47,12 @@ TOP_K = 3
 #   kb_fixed:    in-scope min 0.350, out-of-scope max 0.329 -> midpoint 0.3395
 #   kb_sentence: in-scope min 0.349, out-of-scope max 0.330 -> midpoint 0.3395
 IDK_THRESHOLD = 0.34
+# For order-status queries the Composer appends retrieved policy only above this
+# similarity. Calibrated in demos/task07_crew.py (order IDs stripped from the
+# retrieval query): pure status questions ("Where is my order NYK-1009?") top
+# out at 0.480; order+policy questions ("Can I cancel my order NYK-1004?")
+# start at 0.508 -> midpoint 0.494.
+ORDER_POLICY_MIN_SIM = 0.49
 
 # --- Governance --------------------------------------------------------------
 TOKEN_BUDGET = 2000  # max estimated tokens per request

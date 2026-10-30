@@ -19,7 +19,13 @@ STOPWORDS = set(
 def _stem(word: str) -> str:
     for suffix in ("ing", "ed", "es", "s"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
-            return word[: -len(suffix)]
+            stem = word[: -len(suffix)]
+            # Undouble a final consonant: cancelled -> cancel, shipped -> ship.
+            # Keep "ss" (passed -> pass) and short "ll" stems (called -> call).
+            doubled = stem[-1] == stem[-2] and stem[-1] != "s"
+            if suffix in ("ing", "ed") and doubled and (stem[-1] != "l" or len(stem) >= 5):
+                stem = stem[:-1]
+            return stem
     return word
 
 
