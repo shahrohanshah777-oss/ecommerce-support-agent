@@ -10,6 +10,7 @@ from pathlib import Path
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")  # ChromaDB telemetry
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")  # Hugging Face hub
 # CrewAI execution tracing. CREWAI_TRACING_ENABLED=false alone does NOT stop the
 # first-run trace collection + 20s "Share this execution trace?" prompt;
 # CREWAI_TESTING=true does (it is only read by crewai's tracing code).
@@ -36,9 +37,16 @@ ORDER_ID_PATTERN = r"\bNYK-\d{4,6}\b"
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 COLLECTION_FIXED = "kb_fixed"
 COLLECTION_SENTENCE = "kb_sentence"
+FIXED_CHUNK_WORDS = 40
+FIXED_CHUNK_OVERLAP = 10
+# Task 5 recommendation (equal mean precision 0.767; recall 1.000 vs 0.900).
+RECOMMENDED_COLLECTION = COLLECTION_SENTENCE
 TOP_K = 3
-# Placeholder: replaced in Phase 3 with an empirically calibrated value.
-IDK_THRESHOLD = None
+# "I don't know" threshold on top-1 cosine similarity, calibrated empirically in
+# demos/task04_calibrate.py (12 in-scope vs 10 out-of-scope queries):
+#   kb_fixed:    in-scope min 0.350, out-of-scope max 0.329 -> midpoint 0.3395
+#   kb_sentence: in-scope min 0.349, out-of-scope max 0.330 -> midpoint 0.3395
+IDK_THRESHOLD = 0.34
 
 # --- Governance --------------------------------------------------------------
 TOKEN_BUDGET = 2000  # max estimated tokens per request

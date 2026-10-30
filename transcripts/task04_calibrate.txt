@@ -1,0 +1,68 @@
+# Transcript: task04_calibrate
+# MOCK_LLM=True
+# Generated: 2026-10-30T17:19:18
+
+Embedding model: sentence-transformers/all-MiniLM-L6-v2 | chunks embedded as '<doc title>: <chunk>'
+
+=== Collection: kb_fixed
+  IN  top1=0.545  -> 09_size_exchange           | How many days do I have to return a pair of shoes?
+  IN  top1=0.552  -> 02_cod_refund_timelines    | When will I get my money back for a cash on delivery order?
+  IN  top1=0.622  -> 03_delivery_sla            | How long does standard delivery take to Bangalore?
+  IN  top1=0.626  -> 05_warranty_terms          | Is there a warranty on a hair dryer?
+  IN  top1=0.696  -> 06_order_cancellation      | Can I cancel my order after it has been shipped?
+  IN  top1=0.609  -> 07_loyalty_points          | How do I redeem my reward points?
+  IN  top1=0.578  -> 08_payment_failure_retry   | My payment failed but money was deducted
+  IN  top1=0.616  -> 09_size_exchange           | Can I exchange a dress for a bigger size?
+  IN  top1=0.406  -> 10_damaged_item_claims     | The lipstick I received was broken
+  IN  top1=0.350  -> 11_international_shipping  | Do you ship to Dubai?
+  IN  top1=0.609  -> 12_escalation_matrix       | How do I escalate my complaint?
+  IN  top1=0.583  -> 04_reverse_pickup          | Is free pickup available for my return?
+  OUT top1=0.052  -> 11_international_shipping  | What is the capital of France?
+  OUT top1=0.329  -> 04_reverse_pickup          | Write a Python function to reverse a linked list
+  OUT top1=0.128  -> 11_international_shipping  | Who won the cricket world cup in 2011?
+  OUT top1=0.241  -> 03_delivery_sla            | What will the weather be like in Mumbai tomorrow?
+  OUT top1=0.131  -> 06_order_cancellation      | Explain quantum entanglement in simple terms
+  OUT top1=0.057  -> 06_order_cancellation      | Give me a recipe for butter chicken
+  OUT top1=0.193  -> 07_loyalty_points          | What is the stock price of Reliance today?
+  OUT top1=0.120  -> 07_loyalty_points          | Recommend a good gaming laptop under 80000
+  OUT top1=0.184  -> 02_cod_refund_timelines    | How do I file my income tax return?
+  OUT top1=0.122  -> 13_order_status_glossary   | Translate good morning into French
+  in-scope  : min 0.350  max 0.696  mean 0.566
+  out-scope : min 0.052  max 0.329  mean 0.156
+  gap       : (0.329, 0.350)  width 0.021  midpoint 0.3396
+  tutorial preset 0.5: would wrongly refuse 2/12 in-scope queries
+  tutorial preset 0.6: would wrongly refuse 6/12 in-scope queries
+  tutorial preset 0.7: would wrongly refuse 12/12 in-scope queries
+
+=== Collection: kb_sentence
+  IN  top1=0.644  -> 01_return_window           | How many days do I have to return a pair of shoes?
+  IN  top1=0.585  -> 02_cod_refund_timelines    | When will I get my money back for a cash on delivery order?
+  IN  top1=0.600  -> 03_delivery_sla            | How long does standard delivery take to Bangalore?
+  IN  top1=0.690  -> 05_warranty_terms          | Is there a warranty on a hair dryer?
+  IN  top1=0.741  -> 06_order_cancellation      | Can I cancel my order after it has been shipped?
+  IN  top1=0.592  -> 07_loyalty_points          | How do I redeem my reward points?
+  IN  top1=0.595  -> 08_payment_failure_retry   | My payment failed but money was deducted
+  IN  top1=0.636  -> 09_size_exchange           | Can I exchange a dress for a bigger size?
+  IN  top1=0.444  -> 10_damaged_item_claims     | The lipstick I received was broken
+  IN  top1=0.349  -> 11_international_shipping  | Do you ship to Dubai?
+  IN  top1=0.500  -> 12_escalation_matrix       | How do I escalate my complaint?
+  IN  top1=0.651  -> 04_reverse_pickup          | Is free pickup available for my return?
+  OUT top1=0.034  -> 03_delivery_sla            | What is the capital of France?
+  OUT top1=0.330  -> 04_reverse_pickup          | Write a Python function to reverse a linked list
+  OUT top1=0.140  -> 01_return_window           | Who won the cricket world cup in 2011?
+  OUT top1=0.256  -> 03_delivery_sla            | What will the weather be like in Mumbai tomorrow?
+  OUT top1=0.142  -> 04_reverse_pickup          | Explain quantum entanglement in simple terms
+  OUT top1=0.038  -> 06_order_cancellation      | Give me a recipe for butter chicken
+  OUT top1=0.221  -> 07_loyalty_points          | What is the stock price of Reliance today?
+  OUT top1=0.119  -> 07_loyalty_points          | Recommend a good gaming laptop under 80000
+  OUT top1=0.219  -> 02_cod_refund_timelines    | How do I file my income tax return?
+  OUT top1=0.146  -> 13_order_status_glossary   | Translate good morning into French
+  in-scope  : min 0.349  max 0.741  mean 0.586
+  out-scope : min 0.034  max 0.330  mean 0.165
+  gap       : (0.330, 0.349)  width 0.019  midpoint 0.3392
+  tutorial preset 0.5: would wrongly refuse 2/12 in-scope queries
+  tutorial preset 0.6: would wrongly refuse 7/12 in-scope queries
+  tutorial preset 0.7: would wrongly refuse 11/12 in-scope queries
+
+Chosen IDK_THRESHOLD = 0.34 - inside the observed gap for BOTH collections.
+Caveat: the gap is narrow (~0.02); see README for discussion.

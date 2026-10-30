@@ -52,6 +52,46 @@ pip install -r requirements.txt
 
 Run demos from the repo root as modules, e.g. `python -m demos.task01_dataset`.
 
+## RAG core (Tasks 3–5)
+
+### Task 3: two chunking strategies, two collections
+| Strategy | Collection | Chunks | Rule |
+|---|---|---|---|
+| Fixed-size with overlap | `kb_fixed` | 42 | 40-word windows, 10-word overlap (ignores sentence boundaries) |
+| Sentence-based | `kb_sentence` | 52 | one sentence per chunk |
+
+Both strategies are embedded with **`sentence-transformers/all-MiniLM-L6-v2`** (local, normalised vectors) and `collection.upsert()`-ed into **separate** persistent ChromaDB collections that use cosine distance. Each chunk is embedded as `"<document title>: <chunk>"` (a *contextual chunk header*), while the stored text stays the raw chunk. Without the header, short policy sentences lose their topic: "Nykaa currently delivers only to addresses within India" never says "shipping". In the first calibration run without headers, the in-scope and out-of-scope groups **overlapped**, and "Do you ship to Dubai?" retrieved the wrong document. Evidence: `transcripts/task03_indexing.txt`.
+
+The model is downloaded from Hugging Face once on first run (~90 MB) and loads from the local cache (`local_files_only=True`) after that. All RAG demos were rerun with every outbound socket blocked and made zero network attempts.
+
+### Task 4: "I don't know" threshold, calibrated empirically
+Top-1 cosine similarity measured on 12 in-scope and 10 out-of-scope queries (`transcripts/task04_calibrate.txt`):
+
+| Collection | In-scope min | In-scope mean | Out-of-scope max | Out-of-scope mean | Gap midpoint |
+|---|---|---|---|---|---|
+| `kb_fixed` | 0.350 | 0.566 | 0.329 | 0.156 | 0.3396 |
+| `kb_sentence` | 0.349 | 0.586 | 0.330 | 0.165 | 0.3392 |
+
+**Chosen threshold: `IDK_THRESHOLD = 0.34`**, which sits inside the observed gap for both collections. The common tutorial presets would be wrong here: 0.5 wrongly refuses 2/12 in-scope queries, 0.6 refuses 6–7/12, and 0.7 refuses 11–12/12. **Caveat:** the gap is only about 0.02 wide. The closest cases are "Do you ship to Dubai?" (in-scope, 0.35) and "Write a Python function to reverse a linked list" (out-of-scope, 0.33, which matches *reverse pickup* on one word). In production I'd add a cross-encoder re-ranker or an LLM relevance check rather than rely on a single cosine cut-off.
+
+**Grounded generation** (`rag/generate.py`, `transcripts/task04_grounded.txt`): retrieve top-3 chunks. If top-1 < 0.34, return the fallback. Otherwise, under `MOCK_LLM`, an **extractive** generator quotes the 1–2 retrieved sentences that best match the query (dense cosine + 0.4 × IDF-weighted keyword overlap). Every quoted sentence is verbatim retrieved text, and the demo asserts this. The demo answers 5 in-scope queries and refuses 1 out-of-scope query ("book me a train ticket", top-1 0.295 / 0.331) on both collections.
+
+*Honest limitations:* the selector's keyword weight was set while looking at these 5 demo queries, so they aren't a held-out test (the 15 Task 13 queries are). One query shows a real **retrieval** miss: for "What is the return window for electronics?", the right document is retrieved top-1, but the sentence that actually holds the answer ("…Electronics within 7 days") isn't in the top-3 chunks. The answer is therefore grounded but incomplete.
+
+### Task 5: precision / recall per collection (`transcripts/task05_retrieval_eval.txt`)
+Top-3 chunks → parent `doc_id` → de-duplicated → scored against hand-labelled relevant documents.
+
+| Query | Relevant | `kb_fixed` P | `kb_fixed` R | `kb_sentence` P | `kb_sentence` R |
+|---|---|---|---|---|---|
+| Return window for electronics | 01 | 1/3 = 0.33 | 1/1 = 1.00 | 1/3 = 0.33 | 1/1 = 1.00 |
+| COD refund to bank | 02 | 1/1 = 1.00 | 1/1 = 1.00 | 1/1 = 1.00 | 1/1 = 1.00 |
+| Cancel a delayed shipment | 06, 03 | 1/1 = 1.00 | **1/2 = 0.50** | 2/2 = 1.00 | **2/2 = 1.00** |
+| Reward points per order | 07 | 1/1 = 1.00 | 1/1 = 1.00 | 1/1 = 1.00 | 1/1 = 1.00 |
+| Damaged hair straightener | 10 | 1/2 = 0.50 | 1/1 = 1.00 | 1/2 = 0.50 | 1/1 = 1.00 |
+| **Mean** | | **0.767** | **0.900** | **0.767** | **1.000** |
+
+**Recommendation: deploy sentence-based chunking (`kb_sentence`).** Both strategies have the same mean document-level precision (0.767), but sentence chunks reach a mean recall of 1.000 versus 0.900. On the two-document question about cancelling a delayed shipment, the overlapping fixed windows filled all three top-3 slots with copies of the cancellation policy, while sentence chunks left room for the delivery-SLA document. Sentence chunks also give cleaner answers: the extractive generator quotes complete sentences instead of window fragments like "…within 7". Since the recall gap rests on one query out of five, I'd re-check it on a larger set before production. The crew (Part 2) uses `config.RECOMMENDED_COLLECTION = "kb_sentence"`.
+
 ## The mock LLM (`llm/mock_llm.py`)
 
 `MockLLM` extends `crewai.llms.base_llm.BaseLLM` and drives CrewAI's text ReAct loop deterministically (`supports_function_calling()` returns `False`). On each call it either emits one `Action` / `Action Input` tool step or a `Final Answer`. Per-agent `responder` hooks write the final-answer text.
@@ -70,7 +110,7 @@ Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pyt
 | `config.py` | Flags, paths, thresholds, telemetry switches |
 | `dataset.py` | Task 1: seeded order generator |
 | `kb/` | Task 2: knowledge-base documents |
-| `rag/` | Tasks 3–5, 16: chunking, indexing, grounded generation, retrieval eval, cache |
+| `rag/` | Tasks 3–5, 16: KB loader, chunking, indexing, grounded generation, keyword scoring, retrieval eval, cache |
 | `llm/` | Mock LLM (`crewai.llms.base_llm.BaseLLM` subclass) |
 | `tools/` | RAG tool and `check_order_status` |
 | `crew/` | Tasks 7, 9: CrewAI crew and Pydantic response schema |
