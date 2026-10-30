@@ -4,6 +4,36 @@
 
 > Work in progress. Sections below are filled in as each phase is completed.
 
+## Dataset design (Task 1): reproduce with `python dataset.py`
+
+| Choice | Value |
+|---|---|
+| Seed | `SEED = 42` (local `random.Random(42)`). This is the first seed tried, and it passed every threshold, so no reseeding was needed and no record was hand-edited |
+| Size | `N_ORDERS = 60`, IDs `NYK-1001` … `NYK-1060` |
+| Category weights | Beauty 0.35, Apparel 0.25, Footwear 0.15, Home 0.13, Electronics 0.12 (Beauty-heavy, since beauty is Nykaa's core business) |
+| Status weights | Placed 0.15, Shipped 0.20, Delivered 0.40, Returned 0.12, Refunded 0.13 |
+| Amount range | **Rs 199 – Rs 14,999** overall, drawn per category (Beauty 199–4,999 · Apparel 399–6,999 · Footwear 499–8,999 · Home 299–9,999 · Electronics 799–14,999) and rounded to Rs x,xx9 price points |
+| `days_since_created` | Integer 0–30, banded by status (Placed 0–2 · Shipped 1–8 · Delivered 3–30 · Returned 8–30 · Refunded 10–30) |
+| `delayed_shipment` | Bernoulli(0.25), only for orders ≥ 3 days old (an order can't miss its 2–7-day delivery SLA before that) |
+
+**Price-range reasoning:** Rs 199 – Rs 14,999 covers everything from a single lipstick or sheet mask at the low end to premium beauty electronics (hair dryers, stylers) at the top, which matches Nykaa's actual price spread.
+
+**Generated result** (`transcripts/task01_dataset.txt`):
+
+| Category | Count | | Status | Count |
+|---|---|---|---|---|
+| Beauty | 24 | | Placed | 10 |
+| Apparel | 11 | | Shipped | 13 |
+| Footwear | 11 | | Delivered | 24 |
+| Home | 5 | | Returned | 5 |
+| Electronics | 9 | | Refunded | 8 |
+
+`delayed_shipment=True`: **14 / 60 = 23.3%** (required 10–30%). Every category has ≥ 3 records and every status has ≥ 1. `dataset.validate()` asserts all of these thresholds.
+
+## Knowledge base (Task 2)
+
+`kb/` contains 13 documents of 3–5 sentences each: the 12 required topics plus an order-status glossary. The topic-to-document mapping is in `rag/kb.py::REQUIRED_TOPICS`, and the inventory is in `transcripts/task02_kb.txt`. All policies were written for this project and are **fictional**. They are internally consistent (e.g. the delivery SLA defines `delayed_shipment`, and the escalation matrix uses a Rs 5,000 threshold), but they are not Nykaa's real policies.
+
 ## Runs fully offline under `MOCK_LLM`
 
 - Every graded transcript in `transcripts/` was generated with `MOCK_LLM=true` (the default), with **zero API keys and zero network access**.

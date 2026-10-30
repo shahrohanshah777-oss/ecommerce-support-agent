@@ -1,0 +1,3 @@
+# Order Cancellation Policy
+
+An order can be cancelled free of charge from the app or website at any time while its status is Placed. Once an order has Shipped it can no longer be cancelled, unless the shipment has been flagged as delayed, so the customer should instead refuse the delivery or raise a return after it arrives. For prepaid orders the cancellation refund goes back to the original payment method within 5 to 7 business days, or instantly to the Nykaa Wallet if the customer prefers. Nykaa may also cancel an order when an item goes out of stock, in which case the customer is informed by email and refunded in full.

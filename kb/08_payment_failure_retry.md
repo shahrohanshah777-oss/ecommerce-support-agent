@@ -1,0 +1,3 @@
+# Payment Failure and Retry Policy
+
+If a payment fails but money has been debited from the customer's account, no order is created and the bank or payment gateway reverses the amount automatically within 5 to 7 business days. When a payment fails at checkout, the cart is held for 30 minutes so the customer can retry with the same or a different payment method. A failed payment can be retried at most 3 times for the same order, after which the order is cancelled and the items are released back to inventory. Nykaa support will never ask for a full card number, CVV or OTP, and customers should share only the last 4 digits of a card for verification.
