@@ -23,8 +23,9 @@ from guardrails import (
     INJECTION_REFUSAL, UNGROUNDED_REFUSAL, GroundednessResult,
     check_groundedness, detect_injection, mask_pii,
 )
+from llm.providers import plain_text
 from memory import build_memory_chain, get_session_history
-from review.autogen_review import ReviewVerdict, review_draft
+from review.autogen_review import REVIEW_FALLBACK, ReviewVerdict, review_draft
 
 
 class PipelineResult(BaseModel):
@@ -61,10 +62,15 @@ def verify_draft(run: CrewRun) -> GroundednessResult:
     return check_groundedness(
         answer=r.answer,
         intent=r.intent,
-        top_similarity=r.retrieval_top_similarity,
+        # the retrieval tool's own score, not the value the Composer copied into the draft
+        top_similarity=run.retrieval.get("top_similarity", r.retrieval_top_similarity),
         threshold=config.IDK_THRESHOLD,
         context=run.retrieval.get("context", []),
         allowed_sentences=template_sentences(order, missing),
+        semantic=not config.MOCK_LLM,  # a real LLM paraphrases; the mock quotes verbatim
+        query=run.query,
+        # when the Autogen reviewer (a real LLM) has judged support, NLI is advisory
+        require_entailment=not REVIEW_ENABLED,
     )
 
 
@@ -79,11 +85,20 @@ REVIEW_ENABLED = True  # demos may switch the Autogen stage off to isolate the T
 
 def _respond(resolved_query: str) -> dict:
     run = run_crew(resolved_query)
+    if not config.MOCK_LLM:
+        run.response = run.response.model_copy(update={"answer": plain_text(run.response.answer)})
     draft = run.response.answer
     outcome = review_run(run) if REVIEW_ENABLED else None
-    if outcome and not outcome.verdict.approved:
-        run.response = run.response.model_copy(update={"answer": outcome.verdict.final_answer})
-    verdict = verify_draft(run)
+    # A real editor sometimes edits the draft yet still sets approved=true, so an
+    # edited final_answer is applied either way.
+    if outcome and (not outcome.verdict.approved or outcome.verdict.final_answer.strip() != draft.strip()):
+        final = outcome.verdict.final_answer.strip() or REVIEW_FALLBACK  # the editor removed everything
+        run.response = run.response.model_copy(
+            update={"answer": final if config.MOCK_LLM else plain_text(final)})
+    if run.response.answer == REVIEW_FALLBACK:  # nothing of the draft survived review: a refusal
+        verdict = GroundednessResult(passed=False, reason="the review removed every sentence of the draft")
+    else:
+        verdict = verify_draft(run)
     return {
         "answer": run.response.answer if verdict.passed else UNGROUNDED_REFUSAL,
         "status": "answered" if verdict.passed else "refused_ungrounded",

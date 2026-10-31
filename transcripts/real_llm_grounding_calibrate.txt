@@ -1,0 +1,72 @@
+# Transcript: real_llm_grounding_calibrate
+# MOCK_LLM=True
+# Generated: 2026-10-31T14:29:14
+
+NLI model: MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli
+Premises: each sentence of the document, each adjacent pair, and the whole document, each prefixed 'Nykaa policy: '.
+
+SUPPORTED paraphrases (16)
+  P(entail)=0.999 ACCEPT | If your pin code isn't serviceable, you'll need to ship the item yourself and can get up to Rs 150 back in your Nykaa Wallet.
+  P(entail)=0.999 ACCEPT | You can cancel your order for free while it is still in Placed status.
+  P(entail)=0.999 ACCEPT | After a failed payment your cart is held for 30 minutes so you can try again.
+  P(entail)=0.998 ACCEPT | Standard delivery to metro cities usually takes between 2 and 4 business days.
+  P(entail)=0.998 ACCEPT | If you order before 2 PM, express delivery reaches eligible pin codes the next business day.
+  P(entail)=0.998 ACCEPT | You will get an SMS and an email if your shipment is delayed.
+  P(entail)=0.998 ACCEPT | Opened beauty products and innerwear can't be picked up for a return.
+  P(entail)=0.998 ACCEPT | Hair dryers and trimmers come with a 12-month manufacturer warranty starting from delivery.
+  P(entail)=0.998 ACCEPT | Physical or liquid damage is not covered by the warranty.
+  P(entail)=0.998 ACCEPT | Shipped orders can't be cancelled unless they are flagged as delayed, so you can refuse the delivery instead.
+  P(entail)=0.998 ACCEPT | Prepaid cancellations are refunded to your original payment method in 5 to 7 business days.
+  P(entail)=0.998 ACCEPT | You earn 1 reward point for every Rs 100 you spend on delivered orders.
+  P(entail)=0.997 ACCEPT | Reverse pickup means Nykaa collects the item you are returning from your doorstep for free.
+  P(entail)=0.997 ACCEPT | If money was debited but the payment failed, your bank will reverse it automatically within 5 to 7 business days.
+  P(entail)=0.996 ACCEPT | Nykaa will never ask you for your CVV or OTP.
+  P(entail)=0.992 ACCEPT | Your reward points expire 12 months after they are credited.
+
+INVENTED claims (15)
+  P(entail)=0.242 reject | Your order will definitely arrive by tomorrow evening.
+  P(entail)=0.054 reject | You can choose a specific delivery time slot at checkout.
+  P(entail)=0.004 reject | You can also drop the item off at any Nykaa store instead.
+  P(entail)=0.003 reject | You can buy an extended warranty for electronics at checkout.
+  P(entail)=0.002 reject | Nykaa will replace a broken appliance at your home within 48 hours.  numbers not in evidence: [48.0]
+  P(entail)=0.002 reject | We will send you a replacement product free of charge.
+  P(entail)=0.001 reject | Delivery is always free for all orders across India.
+  P(entail)=0.001 reject | Our courier will call you an hour before the pickup.
+  P(entail)=0.001 reject | Cancellation requests are reviewed by our partner banks.
+  P(entail)=0.001 reject | Reward points can be transferred to a friend's account.
+  P(entail)=0.001 reject | You can also pay using cryptocurrency.
+  P(entail)=0.001 reject | Our team will call you to complete the payment over the phone.
+  P(entail)=0.001 reject | Nykaa offers a price-match guarantee on all products.
+  P(entail)=0.000 reject | You will receive a 10% discount coupon for the inconvenience.  numbers not in evidence: [10.0]
+  P(entail)=0.000 reject | Premium members get free gift wrapping on every order.
+
+CONTRADICTIONS (3)
+  P(entail)=0.020 reject | Please share your full card number and CVV so we can verify the payment.
+  P(entail)=0.019 reject | Shipped orders can always be cancelled free of charge.
+  P(entail)=0.001 reject | Reward points never expire.
+
+supported min 0.992 | invented/contradiction max 0.242 | gap (0.242, 0.992) midpoint 0.6170
+Chosen GROUNDING_MIN_ENTAILMENT = 0.62: 16/16 paraphrases accepted, 0/18 invented or contradicting claims accepted.
+
+REAL model sentences, all verified CORRECT (14)
+  P(entail)=0.998 ACCEPT | After the returned item passes the quality check at the Nykaa warehouse, you can receive the refund as a Nykaa Wallet credit within 24 hours, or via bank transfer (NEFT/IMPS) within 5 to 7 business days.
+  P(entail)=0.998 ACCEPT | Reply to your ticket email with the word ESCALATE to request escalation.
+  P(entail)=0.997 ACCEPT | No, you cannot cancel an order after it has shipped unless the shipment is flagged as delayed.
+  P(entail)=0.996 ACCEPT | The new size must be in stock; otherwise you'll be offered a refund.
+  P(entail)=0.995 ACCEPT | In that case you should refuse delivery or initiate a return once it arrives.
+  P(entail)=0.994 ACCEPT | Yes, hair dryers come with a 12-month manufacturer warranty from the delivery date, which can be serviced at the brand's authorised service centres with your Nykaa invoice as proof of purchase.
+  P(entail)=0.993 ACCEPT | You have 15 days from the delivery date to return a pair of shoes.
+  P(entail)=0.992 ACCEPT | If a payment fails but money has been debited, no order is created and the bank or payment gateway will automatically reverse the amount within 5 to 7 business days.
+  P(entail)=0.927 ACCEPT | Yes, you can exchange a dress for a bigger size.
+  P(entail)=0.904 ACCEPT | The claim will be resolved within 3 business days with a free replacement or a full refund.
+  P(entail)=0.895 ACCEPT | No, Nykaa only delivers to addresses within India.
+  P(entail)=0.116 reject | The exchange is allowed within 15 days of delivery, provided the dress is unworn and still has its original tags.
+  P(entail)=0.010 reject | Standard delivery takes 2 to 4 business days to Bangalore.
+  P(entail)=0.004 reject | You should raise a claim within 48 hours of delivery, providing clear photos of the broken lipstick, the outer box, and the shipping label.
+
+Real correct sentences: min 0.004; 3/14 would be refused by the strict gate.
+They overlap the invented claims (max 0.242): correct answers that need world knowledge the
+policy text doesn't state ('a dress is apparel', 'Bangalore is a metro') score near 0, so NO
+threshold separates them. Decision: when the Autogen reviewer (a real LLM) has run, it judges
+support and the final check enforces only the numbers rule, recording NLI scores as advisory.
+The strict gate (threshold 0.62) applies only when review is disabled.

@@ -10,6 +10,8 @@ Under MOCK_LLM the generator is extractive: it quotes the 2 best-scoring
 sentences of that document verbatim, in document order. Every answer is
 therefore grounded by construction; whether retrieval found anything relevant
 at all is decided by the calibrated IDK_THRESHOLD on top-1 cosine similarity.
+With MOCK_LLM=false the configured LLM answers PROMPT_TEMPLATE over the same
+evidence, behind the same threshold.
 """
 from __future__ import annotations
 
@@ -30,8 +32,9 @@ IDK_ANSWER = (
 )
 
 PROMPT_TEMPLATE = """You are a Nykaa customer-support assistant.
-Answer the question using ONLY the context below. If the context does not contain
-the answer, reply exactly: "I don't know".
+Answer the question using ONLY the context below, in 1-3 complete sentences that
+make sense on their own. If the context does not contain the answer, reply
+exactly: "I don't know".
 
 Context:
 {context}
@@ -113,6 +116,27 @@ def _tidy(fragment: str) -> str:
 generator = MockGenerator()
 
 
+class LLMGenerator:
+    """Real-LLM mode: the model answers PROMPT_TEMPLATE over the same evidence.
+    Returns None when the model says it doesn't know."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.tokens_used = 0
+
+    def __call__(self, prompt: str) -> str | None:
+        from llm.providers import complete
+
+        self.calls += 1
+        out = complete(prompt)
+        self.tokens_used += out.tokens
+        text = out.text.strip().strip('"').strip()
+        return None if not text or text.lower().startswith("i don't know") else text
+
+
+llm_generator = LLMGenerator()
+
+
 def policy_query(query: str) -> str:
     """Order IDs never occur in the KB; they only add noise to retrieval and keyword scoring."""
     return " ".join(re.sub(config.ORDER_ID_PATTERN, " ", query, flags=re.IGNORECASE).split())
@@ -152,5 +176,8 @@ def _answer_uncached(original: str, query: str, collection: str, k: int) -> Grou
     evidence = doc_chunks + [c.text for c in chunks
                              if c.similarity >= config.IDK_THRESHOLD and c.text not in doc_chunks]
     prompt = PROMPT_TEMPLATE.format(context="\n".join(f"- {e}" for e in evidence), query=query)
-    text = generator(prompt, query, doc_chunks, top_doc.doc_id, top_doc.title)
+    if config.MOCK_LLM:
+        text = generator(prompt, query, doc_chunks, top_doc.doc_id, top_doc.title)
+    elif (text := llm_generator(prompt)) is None:  # the model itself found no answer in the context
+        return GroundedAnswer(answer=IDK_ANSWER, grounded=False, sources=[], evidence=evidence, **base)
     return GroundedAnswer(answer=text, grounded=True, sources=[top_doc.doc_id], evidence=evidence, **base)

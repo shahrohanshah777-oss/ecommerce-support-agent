@@ -29,6 +29,16 @@ REQUEST_LOG = Path(os.environ.get("NYKAA_REQUEST_LOG", LOGS_DIR / "requests.json
 # --- LLM mode ----------------------------------------------------------------
 # Graded transcripts run with MOCK_LLM=true (default): deterministic, no API keys.
 MOCK_LLM = os.environ.get("MOCK_LLM", "true").lower() == "true"
+# Optional real-LLM mode (MOCK_LLM=false): all four LLM call sites (grounded
+# generation, CrewAI crew, Autogen review, judge) use one OpenAI-compatible
+# chat-completions endpoint. Default: Groq's free tier, which needs GROQ_API_KEY.
+LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+LLM_API_KEY_ENV = os.environ.get("LLM_API_KEY_ENV", "GROQ_API_KEY")  # name of the variable, never the key
+LLM_TEMPERATURE = 0.0
+# Groq's free tier allows 8,000 tokens/minute and one request uses ~5-7k, so 429s
+# are expected; the OpenAI SDK waits for the server's retry-after between attempts.
+LLM_MAX_RETRIES = 8
 
 # --- Orders ------------------------------------------------------------------
 # Shared by dataset.py (ID generation) and the mock LLM (ID extraction).
@@ -54,6 +64,14 @@ IDK_THRESHOLD = 0.34
 # out at 0.480; order+policy questions ("Can I cancel my order NYK-1004?")
 # start at 0.508 -> midpoint 0.494.
 ORDER_POLICY_MIN_SIM = 0.49
+# Real-LLM mode only: a paraphrased answer sentence counts as grounded when a local
+# NLI model judges it entailed by the evidence (and its numbers occur in the
+# evidence). Calibrated in demos/real_llm_grounding_calibrate.py on 16 labelled
+# paraphrases vs 15 invented claims + 3 contradictions: paraphrases >= 0.992,
+# the rest <= 0.242 -> midpoint 0.617. (Embedding similarity was tried first and
+# rejected: the two groups overlapped and it accepted contradictions.)
+NLI_MODEL = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+GROUNDING_MIN_ENTAILMENT = 0.62
 
 # --- Governance --------------------------------------------------------------
 # Per-request token budget (runtime governance layer), calibrated from metered

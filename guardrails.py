@@ -8,10 +8,13 @@ pattern and are out of scope for this keyless, regex-only masker.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
+import numpy as np
 from pydantic import BaseModel
 
-from rag.kb import answer_sentences
+import config
+from rag.kb import answer_sentences, split_sentences
 
 # --- PII masking ---------------------------------------------------------------
 # Full card numbers (13-19 digits, optional space/dash groups) are masked whole.
@@ -98,6 +101,72 @@ class GroundednessResult(BaseModel):
     passed: bool
     reason: str
     unsupported: list[str] = []
+    # real-LLM mode only: NLI entailment probability of each non-verbatim sentence
+    entailment: dict[str, float] = {}
+
+
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def numbers_in(text: str) -> set[float]:
+    """Every number in `text` as a value, so "Rs 6,269" == "6269" and "0.70" == "0.7"."""
+    found = set()
+    for n in _NUMBER.findall(text):
+        try:
+            found.add(float(n.replace(",", "")))
+        except ValueError:  # e.g. a dotted version string
+            continue
+    return found
+
+
+@lru_cache(maxsize=1)
+def get_nli():
+    """Local NLI cross-encoder (real-LLM mode only); downloaded once on first use."""
+    import torch
+    from sentence_transformers import CrossEncoder
+
+    kwargs = dict(model_kwargs={"dtype": torch.float32})  # the checkpoint is fp16, which is slow on CPU
+    try:
+        return CrossEncoder(config.NLI_MODEL, local_files_only=True, **kwargs)
+    except OSError:
+        print(f"[guardrails] {config.NLI_MODEL} not cached yet - downloading once (~360 MB)...")
+        return CrossEncoder(config.NLI_MODEL, **kwargs)
+
+
+def premise_units(*groups: list[str]) -> list[str]:
+    """NLI premises: every evidence sentence, every adjacent pair (facts often span
+    two sentences, e.g. "...counted from the delivery date. Footwear ... 15 days"),
+    and all the evidence together."""
+    units: list[str] = []
+    for group in groups:
+        sents = [s for text in group for s in split_sentences(text)]
+        units += sents + [f"{a} {b}" for a, b in zip(sents, sents[1:])]
+    whole = " ".join(t for group in groups for t in group)
+    return list(dict.fromkeys(units + ([whole] if whole else [])))
+
+
+# Contextual header for every premise, as chunks get "<title>: " before embedding:
+# KB sentences rarely name Nykaa, and without it the NLI model reads "your Nykaa
+# reward points expire..." as NOT entailed by "Reward points expire..." (0.10 vs 0.98).
+NLI_PREMISE_PREFIX = "Nykaa policy: "
+_THOUSANDS = re.compile(r"(?<=\d),(?=\d{3}\b)")
+
+
+def _nli_text(text: str) -> str:
+    return _THOUSANDS.sub("", text)  # "Rs 6,269" and "Rs 6269" read the same
+
+
+def entailment_support(sentences: list[str], premises: list[str], known_numbers: set[float]
+                       ) -> list[tuple[str, float, set[float]]]:
+    """(sentence, best P(entailment) over the premises, numbers absent from the evidence)."""
+    if not sentences or not premises:
+        return [(s, 0.0, numbers_in(s) - known_numbers) for s in sentences]
+    model = get_nli()
+    label = {v.lower(): k for k, v in model.config.id2label.items()}["entailment"]
+    probs = model.predict([(NLI_PREMISE_PREFIX + _nli_text(p), _nli_text(s)) for s in sentences for p in premises],
+                          apply_softmax=True)
+    probs = np.asarray(probs)[:, label].reshape(len(sentences), len(premises))
+    return [(s, round(float(row.max()), 3), numbers_in(s) - known_numbers) for s, row in zip(sentences, probs)]
 
 
 def check_groundedness(
@@ -107,12 +176,24 @@ def check_groundedness(
     threshold: float,
     context: list[str],
     allowed_sentences: list[str],
+    semantic: bool = False,
+    query: str = "",
+    require_entailment: bool = True,
 ) -> GroundednessResult:
     """Refuse unless every sentence of the answer is backed by evidence.
 
     A sentence is supported if it appears verbatim in the retrieved context, or is
     one of `allowed_sentences` (order facts rendered from the lookup tool's record,
     and fixed system templates such as the fallback).
+
+    `semantic=True` (real-LLM mode, where answers paraphrase) instead requires
+    every non-quoted sentence to have all its numbers in the evidence or in the
+    customer's own query, and scores it with a local NLI model. With
+    `require_entailment=True` it must also reach config.GROUNDING_MIN_ENTAILMENT.
+    The pipeline sets it False when the Autogen reviewer (a real LLM) has already
+    judged support: the small NLI model wrongly rejects correct sentences that need
+    world knowledge ("a dress is apparel"; demos/real_llm_grounding_calibrate.py),
+    so its scores are then recorded, not enforced.
     """
     if intent == "policy" and top_similarity < threshold:
         return GroundednessResult(
@@ -120,6 +201,8 @@ def check_groundedness(
             reason=f"retrieved context does not support the question "
                    f"(top-1 similarity {top_similarity:.3f} < {threshold})",
         )
+    if not answer_sentences(answer):
+        return GroundednessResult(passed=False, reason="empty answer")
     evidence = " ".join(context)
     allowed = set(allowed_sentences)
     unsupported = []
@@ -127,10 +210,27 @@ def check_groundedness(
         if sentence in allowed or sentence in evidence:
             continue
         unsupported.append(sentence)
+    entailment: dict[str, float] = {}
+    if semantic and unsupported:
+        known = numbers_in(" ".join(context + list(allowed_sentences)) + " " + query)
+        premises = premise_units(context, list(allowed_sentences))
+        checked, unsupported = entailment_support(unsupported, premises, known), []
+        for sentence, prob, missing in checked:
+            entailment[sentence] = prob
+            if missing or (require_entailment and prob < config.GROUNDING_MIN_ENTAILMENT):
+                unsupported.append(sentence)
     if unsupported:
         return GroundednessResult(
             passed=False,
             reason=f"{len(unsupported)} sentence(s) not supported by retrieved context or order data",
-            unsupported=unsupported,
+            unsupported=unsupported, entailment=entailment,
         )
+    if entailment and require_entailment:
+        return GroundednessResult(passed=True, entailment=entailment,
+                                  reason="every sentence is quoted from, or entailed by, retrieved context "
+                                         "or order data")
+    if entailment:
+        return GroundednessResult(passed=True, entailment=entailment,
+                                  reason="every sentence is quoted, or reviewer-approved with all its numbers "
+                                         "found in the evidence (NLI scores advisory)")
     return GroundednessResult(passed=True, reason="every sentence is backed by retrieved context or order data")

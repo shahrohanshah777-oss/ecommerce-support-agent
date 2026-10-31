@@ -4,7 +4,7 @@
 
 **Track completed: Nykaa (E-commerce & Retail).** Capstone project, Agentic Systems course, IIT Roorkee.
 
-A customer-support agent that answers Nykaa policy questions from a knowledge base and checks order status from a validated dataset. A **CrewAI** crew (Retrieval → Lookup → Composer) produces each answer, behind PII and prompt-injection guardrails, with LangChain session memory. Every draft is reviewed by an **Autogen** two-agent team and checked for groundedness before it is sent. It is governed by a tool allow-list and a per-request token budget, deployed with **FastAPI** (HTTP + WebSocket, JSON-Lines logs), and evaluated with an LLM-as-judge. **Everything runs under `MOCK_LLM` with zero API keys and zero network access** (`MOCK_LLM` is the only implemented mode; no real-LLM path is wired in).
+A customer-support agent that answers Nykaa policy questions from a knowledge base and checks order status from a validated dataset. A **CrewAI** crew (Retrieval → Lookup → Composer) produces each answer, behind PII and prompt-injection guardrails, with LangChain session memory. Every draft is reviewed by an **Autogen** two-agent team and checked for groundedness before it is sent. It is governed by a tool allow-list and a per-request token budget, deployed with **FastAPI** (HTTP + WebSocket, JSON-Lines logs), and evaluated with an LLM-as-judge. **Everything runs under `MOCK_LLM` with zero API keys and zero network access**, and every graded transcript uses that mode. An optional [real-LLM mode](#optional-real-llm-mode-mock_llmfalse) (`MOCK_LLM=false`) runs the same pipeline on a real model through any OpenAI-compatible API (Groq by default).
 
 ## Dataset design (Task 1): reproduce with `python dataset.py`
 
@@ -41,7 +41,7 @@ python3.12 -m venv .venv            # Windows: py -3.12 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\activate
 pip install -r requirements.txt     # Linux tip: first `pip install torch --index-url https://download.pytorch.org/whl/cpu`
 
-python -m pytest                    # 88 tests
+python -m pytest                    # 108 tests (+1 live real-LLM test, skipped unless enabled)
 python run_all_demos.py             # regenerates every transcript in transcripts/ (~5 min)
 uvicorn api.main:app --port 8000    # optional: run the API (docs at http://127.0.0.1:8000/docs)
 ```
@@ -72,8 +72,9 @@ The first run downloads the free local embedding model `all-MiniLM-L6-v2` (~90 M
 | 16 | Response cache | `rag/cache.py` | `task16_cache.txt` |
 | extra | Held-out re-evaluation of the improvements | `demos/eval_v2_compare.py` | `eval_v2_baseline.txt`, `eval_v2_compare.txt` |
 | extra | Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `phase1_mock_llm_spike.txt` |
+| extra | Optional real-LLM mode (not graded) | `llm/providers.py`, `demos/real_llm_mode.py` | `real_llm_grounding_calibrate.txt`, `real_llm_mode_strict_nli_gate.txt`, `eval/results_real_llm_task13_strict_nli_gate.json` |
 
-Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passes all 88 tests and 18 demos. It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
+Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passed all 88 tests and 18 demos at the time (the real-LLM mode and its 20 tests were added afterwards; the mock transcripts are unchanged by it). It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
 
 ## Acceptance criteria checklist
 
@@ -350,6 +351,49 @@ An in-memory LRU cache (512 entries) in front of the grounded-generation step, k
 
 Through the full pipeline, the repeated request still invokes the `rag_lookup` tool, but its generation step is served from the cache (generator calls unchanged, same answer). Re-indexing (`build_index()`, and `POST /add-document` via `upsert_document()`) **clears the cache**, so a cached "I don't know" can never hide a newly added document.
 
+## Optional real-LLM mode (`MOCK_LLM=false`)
+
+Not part of the graded evidence: every acceptance criterion is met under `MOCK_LLM`, which stays the default. With `MOCK_LLM=false`, all four LLM call sites named in the brief run on a real model through any OpenAI-compatible chat API (`llm/providers.py`):
+
+| Call site | Real-mode implementation |
+|---|---|
+| Grounded generation (Task 4) | the model answers `PROMPT_TEMPLATE` over the same small-to-big evidence, behind the same "I don't know" threshold |
+| CrewAI crew (Task 7) | CrewAI's native OpenAI provider with **native function calling**: the agents choose their own tool calls. Tools use `result_as_answer=True`, so the Composer receives the tools' JSON verbatim |
+| Autogen review (Task 14) | `OpenAIChatCompletionClient` for both agents; same team, prompts and structured `ReviewVerdict` |
+| LLM-as-judge (Task 13) | the model scores `JUDGE_PROMPT` in JSON mode |
+
+```powershell
+$env:GROQ_API_KEY = "..."                    # free key from console.groq.com
+python -m demos.real_llm_mode                # 7 showcase requests + the 15-query Task 13 eval (~10 min)
+$env:LLM_MODEL = "openai/gpt-oss-20b"        # optional: another model (also LLM_BASE_URL, LLM_API_KEY_ENV)
+```
+
+Defaults: Groq, `openai/gpt-oss-120b`, temperature 0. Everything else (guardrails, memory, governance, cache, logging) runs unchanged. Real-mode instructions are *appended* to the agents' tasks, so mock prompts, mock token counts and every graded transcript are byte-for-byte unchanged. Groundedness is always checked against what the **tools returned**, never against values the Composer copied into its draft.
+
+**Groundedness when the model paraphrases.** The mock quotes evidence verbatim; a real model never does, so the verbatim check would refuse almost every answer. What was tried, in order (all in `transcripts/real_llm_grounding_calibrate.txt`, labelled data in `eval/grounding_calibration.py`):
+1. **Embedding similarity** to evidence sentences: rejected. On 16 hand-written paraphrases vs 15 invented claims the groups overlapped (invented max 0.646 > paraphrase min 0.611), and it accepted contradictions such as "Reward points never expire" (0.887).
+2. **A local NLI model** (`MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`, premises = each evidence sentence, adjacent pairs and the whole evidence, each prefixed "Nykaa policy: "): on the hand-written set it separates cleanly (paraphrases ≥ 0.992; invented claims and contradictions ≤ 0.242; threshold 0.62).
+3. **But on real model output it doesn't.** Real answers to the Task 4 calibration queries (none in an eval set), all verified correct by hand, scored as low as **0.004**: correct sentences that need world knowledge the policy doesn't state ("a dress is apparel", "Bangalore is a metro"). 3 of 14 fall below any threshold that rejects the invented claims.
+
+**Decision:** when the Autogen reviewer (itself a real LLM) has run, it judges support; the final deterministic check then enforces only what code can verify exactly, that **every number in a non-quoted sentence occurs in the evidence, the order record or the customer's query**, and records the NLI score of every sentence as advisory. The strict NLI gate applies only if the review stage is disabled.
+
+**Recorded runs** (real output is not deterministic; a rerun can differ):
+
+| Run | Model | Accuracy | Grounding | Completeness | Safety |
+|---|---|---|---|---|---|
+| Mock (graded, Task 13) | `MOCK_LLM` | 0.97 | 1.00 | 0.87 | 1.00 |
+| Development run, before the fixes below | gpt-oss-120b | 0.82 | 0.80 | 0.75 | 1.00 |
+| Strict NLI gate (`transcripts/real_llm_mode_strict_nli_gate.txt`) | gpt-oss-20b | 0.60 | 0.53 | 0.60 | 1.00 |
+| Final design (reviewer judges, numbers enforced) | gpt-oss-120b | pending | | | |
+
+Every answer the strict-gate run let through was correct, and safety was 1.00, but it refused 6 of 15; the two refusals re-run with full detail (Q03, Q08) were correct answers. That run motivated the decision above. Fixes found during development: an editor that deleted every sentence produced an empty "answered" reply (now a refusal, and an empty answer can never pass the check); the model writes typographic Unicode (U+202F, U+2011) that broke substring matching (normalised to plain text); an editor that edits but still sets `approved=true` (the edit is applied either way). The final-design eval is pending because Groq's free tier allows **200,000 tokens per model per day** and one full run uses ~140,000; the development runs used up the day's quota for both models.
+
+Real-mode limitations:
+- **Non-numeric claims rely on the LLM reviewer.** The deterministic layer verifies numbers, not wording: in one run the editor wrote "Nyanga app" for "Nykaa app" and every check accepted it.
+- The real generator sometimes answers "I don't know" to in-scope questions (2 of 12 calibration queries: redeeming points, free pickup).
+- The token budget (Task 15) was calibrated on mock usage; real requests used 3,978–6,752 tokens, under the 8,500 budget, but this is not a calibrated bound.
+- Free-tier rate limits: 8,000 tokens/minute makes a request take 15–60 s; the client waits for the server's `retry-after` and the demo stops cleanly if the daily quota runs out.
+
 ## The mock LLM (`llm/mock_llm.py`)
 
 `MockLLM` extends `crewai.llms.base_llm.BaseLLM` and drives CrewAI's text ReAct loop deterministically (`supports_function_calling()` returns `False`). On each call it either emits one `Action` / `Action Input` tool step or a `Final Answer`. Per-agent `responder` hooks write the final-answer text.
@@ -364,7 +408,7 @@ Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pyt
 ## Known limitations
 
 Each limitation is discussed in its own section above; collected here for review:
-- **Extractive mock generator.** It quotes at most 2 sentences from the top-ranked document. It can quote the wrong ones (Task 13 Q02; held-out H09), and it can't recover when retrieval ranks the wrong document first (held-out H12). A real LLM generator behind the same grounding checks would remove most of this.
+- **Extractive mock generator.** It quotes at most 2 sentences from the top-ranked document. It can quote the wrong ones (Task 13 Q02; held-out H09), and it can't recover when retrieval ranks the wrong document first (held-out H12). The optional [real-LLM mode](#optional-real-llm-mode-mock_llmfalse) replaces it with a real generator, with its own trade-offs.
 - **Thin "I don't know" margin.** The calibrated gap is only about 0.02 wide (0.34 threshold). A cross-encoder re-ranker or LLM relevance check would be more robust than a single cosine cut-off.
 - **Similarity-based order/policy gate.** Very short follow-ups ("Can I still return it?") score below the 0.49 order-policy gate and get the order facts without the policy sentence.
 - **Memory carries forward order IDs only,** not topics ("what about electronics?").
@@ -372,6 +416,7 @@ Each limitation is discussed in its own section above; collected here for review
 - **The token budget is a pre-flight estimate,** recalibrated whenever prompts change, with no hard mid-run stop. Every measured request has stayed under its estimate.
 - **Documents added via `/add-document` live only in the vector index,** not in `kb/`. A full re-index drops them.
 - **The mock judge matches facts by substring,** which is more lenient than a semantic LLM judge.
+- **Real-LLM mode** (optional, ungraded): grounding of non-numeric claims relies on the LLM reviewer, and the final-design eval is pending the provider's daily quota. See [its section](#optional-real-llm-mode-mock_llmfalse).
 - **PII masking covers fixed-format fields only** (phone numbers, card digits). Names and free-text addresses are out of scope, as the brief allows.
 
 ## Repository layout
@@ -382,7 +427,7 @@ Each limitation is discussed in its own section above; collected here for review
 | `dataset.py` | Task 1: seeded order generator |
 | `kb/` | Task 2: knowledge-base documents |
 | `rag/` | Tasks 3–5, 16: KB loader, chunking, indexing, grounded generation, keyword scoring, retrieval eval, cache |
-| `llm/` | Mock LLM (`crewai.llms.base_llm.BaseLLM` subclass) |
+| `llm/` | Mock LLM (`crewai.llms.base_llm.BaseLLM` subclass); real-LLM clients (`providers.py`) |
 | `tools/` | RAG tool and `check_order_status` |
 | `crew/` | Tasks 7, 9: CrewAI crew and Pydantic response schema |
 | `pipeline.py` | Single entry point: guardrails → memory → crew → groundedness check |

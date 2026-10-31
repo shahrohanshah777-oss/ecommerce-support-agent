@@ -12,11 +12,14 @@ Under MOCK_LLM each agent runs on a RuleBasedChatClient. As with the CrewAI mock
 the editor reads "UNSUPPORTED:" lines ONLY from the reviewer agent's own message
 (source == "policy_reviewer"), never from system prompts, whose instructions
 contain the literal example text "UNSUPPORTED: <sentence>".
+With MOCK_LLM=false both agents run on the configured real LLM (llm/providers.py)
+with the same system prompts and the same structured ReviewVerdict output.
 """
 from __future__ import annotations
 
 import asyncio
 import re
+import warnings
 from typing import Sequence
 
 from autogen_agentchat.agents import AssistantAgent
@@ -25,8 +28,13 @@ from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_core.models import LLMMessage, UserMessage
 from pydantic import BaseModel
 
+import config
 from rag.kb import answer_sentences
 from review.mock_client import RuleBasedChatClient
+
+# autogen-ext 0.7.5 logs a harmless pydantic serializer warning for every
+# structured-output response from a real model.
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings", category=UserWarning)
 
 REVIEWER, EDITOR = "policy_reviewer", "final_editor"
 REVIEW_FALLBACK = ("I'm sorry, I can't confirm an answer to that from Nykaa's policy documents or your "
@@ -61,6 +69,8 @@ EDITOR_SYSTEM = (
     "remove every sentence the reviewer marked 'UNSUPPORTED: <sentence>'. Never add new claims. "
     "Reply as JSON with fields approved, final_answer, reason."
 )
+# Real-LLM mode only (the mock's prompts, and so its metered tokens, stay unchanged).
+EDITOR_REAL_SUFFIX = " Set approved to false whenever final_answer differs from the draft in any way."
 
 
 # --- task parsing ----------------------------------------------------------------
@@ -131,11 +141,18 @@ class ReviewOutcome(BaseModel):
     tokens_used: int = 0
 
 
-def build_team() -> tuple[RoundRobinGroupChat, list[RuleBasedChatClient]]:
-    clients = [RuleBasedChatClient(reviewer_respond, REVIEWER), RuleBasedChatClient(editor_respond, EDITOR)]
+def build_team() -> tuple[RoundRobinGroupChat, list]:
+    if config.MOCK_LLM:
+        clients = [RuleBasedChatClient(reviewer_respond, REVIEWER), RuleBasedChatClient(editor_respond, EDITOR)]
+        editor_system = EDITOR_SYSTEM
+    else:
+        from llm.providers import autogen_client
+
+        clients = [autogen_client(), autogen_client()]
+        editor_system = EDITOR_SYSTEM + EDITOR_REAL_SUFFIX
     reviewer = AssistantAgent(REVIEWER, model_client=clients[0], system_message=REVIEWER_SYSTEM,
                               description="Checks every claim in the draft against the evidence.")
-    editor = AssistantAgent(EDITOR, model_client=clients[1], system_message=EDITOR_SYSTEM,
+    editor = AssistantAgent(EDITOR, model_client=clients[1], system_message=editor_system,
                             output_content_type=ReviewVerdict,
                             description="Approves or revises the draft; returns a ReviewVerdict.")
     team = RoundRobinGroupChat([reviewer, editor], max_turns=2,
@@ -150,7 +167,11 @@ async def _review(draft: str, context: list[str], verified_facts: list[str]) -> 
         facts="\n".join(f"- {f}" for f in verified_facts) or "- (none)",
     )
     team, clients = build_team()
-    result = await team.run(task=task)
+    try:
+        result = await team.run(task=task)
+    finally:
+        for client in clients:
+            await client.close()
     last = result.messages[-1]
     if not isinstance(last, StructuredMessage) or not isinstance(last.content, ReviewVerdict):
         raise RuntimeError(f"review team ended without a ReviewVerdict ({type(last).__name__})")

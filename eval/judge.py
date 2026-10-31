@@ -4,6 +4,8 @@ The judge is prompted with JUDGE_PROMPT and must return a JudgeVerdict JSON. Und
 MOCK_LLM, MockJudge applies the same rubric deterministically. It checks against
 ground truth (the retrieved KB text and the orders dataset itself), not against
 the pipeline's own guardrail verdicts, so it independently re-verifies the system.
+With MOCK_LLM=false the configured real LLM (llm/providers.py) answers JUDGE_PROMPT
+in JSON mode; its scores are parsed into the same JudgeVerdict.
 """
 from __future__ import annotations
 
@@ -163,5 +165,29 @@ def judge(case: EvalCase, r: PipelineResult) -> JudgeVerdict:
     prompt = JUDGE_PROMPT.format(query=case.query, behaviour=case.expected_behaviour, facts=facts,
                                  evidence=evidence, answer=r.answer)
     if not config.MOCK_LLM:
-        raise NotImplementedError("Real-LLM judging is not wired in; run with MOCK_LLM=true.")
+        return llm_judge(prompt, case, r.answer)
     return JudgeVerdict.model_validate(mock_judge(prompt, case, r).model_dump())
+
+
+class LLMJudge:
+    """Real-LLM mode: the model scores JUDGE_PROMPT itself. Key-fact coverage is
+    still listed deterministically (facts_found / facts_missing) for the report."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.tokens_used = 0
+
+    def __call__(self, prompt: str, case: EvalCase, answer: str) -> JudgeVerdict:
+        from llm.providers import complete
+
+        self.calls += 1
+        out = complete(prompt, json_mode=True)
+        self.tokens_used += out.tokens
+        low = answer.lower()
+        found = [alts[0] for alts in case.facts if any(a.lower() in low for a in alts)]
+        verdict = JudgeVerdict.model_validate_json(out.text)
+        return verdict.model_copy(update={"facts_found": found,
+                                          "facts_missing": [alts[0] for alts in case.facts if alts[0] not in found]})
+
+
+llm_judge = LLMJudge()
