@@ -41,7 +41,7 @@ python3.12 -m venv .venv            # Windows: py -3.12 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\activate
 pip install -r requirements.txt     # Linux tip: first `pip install torch --index-url https://download.pytorch.org/whl/cpu`
 
-python -m pytest                    # 108 tests (+1 live real-LLM test, skipped unless enabled)
+python -m pytest                    # 109 tests (+1 live real-LLM test, skipped unless enabled)
 python run_all_demos.py             # regenerates every transcript in transcripts/ (~5 min)
 uvicorn api.main:app --port 8000    # optional: run the API (docs at http://127.0.0.1:8000/docs)
 ```
@@ -72,9 +72,9 @@ The first run downloads the free local embedding model `all-MiniLM-L6-v2` (~90 M
 | 16 | Response cache | `rag/cache.py` | `task16_cache.txt` |
 | extra | Held-out re-evaluation of the improvements | `demos/eval_v2_compare.py` | `eval_v2_baseline.txt`, `eval_v2_compare.txt` |
 | extra | Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `phase1_mock_llm_spike.txt` |
-| extra | Optional real-LLM mode (not graded) | `llm/providers.py`, `demos/real_llm_mode.py` | `real_llm_grounding_calibrate.txt`, `real_llm_mode_strict_nli_gate.txt`, `eval/results_real_llm_task13_strict_nli_gate.json` |
+| extra | Optional real-LLM mode (not graded) | `llm/providers.py`, `demos/real_llm_mode.py` | `real_llm_mode.txt`, `eval/results_real_llm_task13.json`, `real_llm_grounding_calibrate.txt`, `real_llm_mode_strict_nli_gate.txt`, `eval/results_real_llm_task13_strict_nli_gate.json` |
 
-Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passed all 88 tests and 18 demos at the time (the real-LLM mode and its 20 tests were added afterwards; the mock transcripts are unchanged by it). It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
+Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passed all 88 tests and 18 demos at the time (the real-LLM mode and its 21 tests were added afterwards; the mock transcripts are unchanged by it). It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
 
 ## Acceptance criteria checklist
 
@@ -384,12 +384,21 @@ Defaults: Groq, `openai/gpt-oss-120b`, temperature 0. Everything else (guardrail
 | Mock (graded, Task 13) | `MOCK_LLM` | 0.97 | 1.00 | 0.87 | 1.00 |
 | Development run, before the fixes below | gpt-oss-120b | 0.82 | 0.80 | 0.75 | 1.00 |
 | Strict NLI gate (`transcripts/real_llm_mode_strict_nli_gate.txt`) | gpt-oss-20b | 0.60 | 0.53 | 0.60 | 1.00 |
-| Final design (reviewer judges, numbers enforced) | gpt-oss-120b | pending | | | |
+| **Final design** (reviewer judges, numbers enforced; `transcripts/real_llm_mode.txt`, `eval/results_real_llm_task13.json`) | gpt-oss-120b | **0.90** | **0.87** | **0.87** | **1.00** |
 
-Every answer the strict-gate run let through was correct, and safety was 1.00, but it refused 6 of 15; the two refusals re-run with full detail (Q03, Q08) were correct answers. That run motivated the decision above. Fixes found during development: an editor that deleted every sentence produced an empty "answered" reply (now a refusal, and an empty answer can never pass the check); the model writes typographic Unicode (U+202F, U+2011) that broke substring matching (normalised to plain text); an editor that edits but still sets `approved=true` (the edit is applied either way). The final-design eval is pending because Groq's free tier allows **200,000 tokens per model per day** and one full run uses ~140,000; the development runs used up the day's quota for both models.
+Every answer the strict-gate run let through was correct, and safety was 1.00, but it refused 6 of 15; the two refusals re-run with full detail (Q03, Q08) were correct answers. That run motivated the decision above.
+
+**Final-design run.** All 12 in-scope queries were answered (no false "I don't know"), the out-of-scope and injection cases were handled correctly, and safety was 1.00. Read against the mock row:
+- **Grounding 0.87 comes entirely from the two refusals** (Q13, Q14), which the LLM judge scored 0 because no evidence "supports" a refusal template; the mock judge accepts the fixed templates. All 13 answered queries scored grounding 1.00.
+- **Completeness is lost on two answers that left facts out:** Q10 (broken perfume) gave only the resolution time, not how to file the claim (48 hours, photo); Q15 (delayed order) listed the order record but not that it will be escalated to Level 2. The eval rows don't record the draft, so it isn't known whether the Composer or the reviewer dropped them.
+- Facts that the substring check missed (Q02 "5-7 business days", Q04 "doorstep", Q06 "cancelled free of charge") were present in paraphrased form, and the LLM judge counted them.
+- Showcase: in rs-3 the reviewer removed the status sentence, so "Where is my order NYK-1009?" was answered without the status ("It is flagged as a delayed shipment..."). In rs-4 the reviewer approved "Your payment was likely declined...", an inference the policy doesn't state for this customer; its numbers are in the retrieved payment policy, so the numbers check passed. An earlier attempt the same day removed that sentence.
+
+Fixes found during development: an editor that deleted every sentence produced an empty "answered" reply (now a refusal, and an empty answer can never pass the check); the model writes typographic Unicode (U+202F, U+2011) that broke substring matching (normalised to plain text); an editor that edits but still sets `approved=true` (the edit is applied either way); that normalisation also turned curly quotes inside the judge's JSON into unescaped `"` and crashed the eval (JSON-mode replies are now left untouched). Groq's free tier allows **200,000 tokens per model per day**, and one full run uses ~140,000.
 
 Real-mode limitations:
-- **Non-numeric claims rely on the LLM reviewer.** The deterministic layer verifies numbers, not wording: in one run the editor wrote "Nyanga app" for "Nykaa app" and every check accepted it.
+- **Non-numeric claims rely on the LLM reviewer.** The deterministic layer verifies numbers, not wording: in one run the editor wrote "Nyanga app" for "Nykaa app" and every check accepted it, and the final run let through "Your payment was likely declined" (rs-4). The reviewer is also not consistent between runs, and it can remove a needed sentence (rs-3).
+- The LLM judge scores refusal templates as ungrounded; its prompt doesn't say they are allowed, as the mock judge's rules do.
 - The real generator sometimes answers "I don't know" to in-scope questions (2 of 12 calibration queries: redeeming points, free pickup).
 - The token budget (Task 15) was calibrated on mock usage; real requests used 3,978–6,752 tokens, under the 8,500 budget, but this is not a calibrated bound.
 - Free-tier rate limits: 8,000 tokens/minute makes a request take 15–60 s; the client waits for the server's `retry-after` and the demo stops cleanly if the daily quota runs out.
@@ -416,7 +425,7 @@ Each limitation is discussed in its own section above; collected here for review
 - **The token budget is a pre-flight estimate,** recalibrated whenever prompts change, with no hard mid-run stop. Every measured request has stayed under its estimate.
 - **Documents added via `/add-document` live only in the vector index,** not in `kb/`. A full re-index drops them.
 - **The mock judge matches facts by substring,** which is more lenient than a semantic LLM judge.
-- **Real-LLM mode** (optional, ungraded): grounding of non-numeric claims relies on the LLM reviewer, and the final-design eval is pending the provider's daily quota. See [its section](#optional-real-llm-mode-mock_llmfalse).
+- **Real-LLM mode** (optional, ungraded): grounding of non-numeric claims relies on the LLM reviewer, which is not consistent between runs (final run on gpt-oss-120b: 0.90 / 0.87 / 0.87 / 1.00). See [its section](#optional-real-llm-mode-mock_llmfalse).
 - **PII masking covers fixed-format fields only** (phone numbers, card digits). Names and free-text addresses are out of scope, as the brief allows.
 
 ## Repository layout

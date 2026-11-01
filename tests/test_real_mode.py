@@ -79,6 +79,21 @@ def test_plain_text_maps_typographic_unicode():
     assert plain_text("15 days, 5‑7 days—it’s") == "15 days, 5-7 days - it's"
 
 
+def test_json_mode_reply_is_not_normalised(monkeypatch):
+    # curly quotes inside a JSON string must survive, or json.loads fails
+    import json
+    from types import SimpleNamespace
+
+    from llm import providers
+
+    reply = '{"rationale": "says “15 days”"}'
+    response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=reply))], usage=None)
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kw: response)))
+    monkeypatch.setattr(providers, "_client", fake)
+    assert json.loads(providers.complete("p", json_mode=True).text)["rationale"] == "says “15 days”"
+    assert providers.complete("p").text == '{"rationale": "says "15 days""}'
+
+
 def test_nli_inputs_ignore_thousands_separators():
     assert guardrails._nli_text("Rs 6,269 of 1,2345") == "Rs 6269 of 1,2345"
 

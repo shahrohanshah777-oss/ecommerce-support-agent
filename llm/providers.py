@@ -84,5 +84,7 @@ def complete(prompt: str, json_mode: bool = False) -> Completion:
     extra = {"response_format": {"type": "json_object"}} if json_mode else {}
     r = _client.chat.completions.create(model=config.LLM_MODEL, temperature=config.LLM_TEMPERATURE,
                                         messages=[{"role": "user", "content": prompt}], **extra)
-    return Completion(text=plain_text(r.choices[0].message.content or "").strip(),
-                      tokens=r.usage.total_tokens if r.usage else 0)
+    text = r.choices[0].message.content or ""
+    if not json_mode:  # plain_text would turn curly quotes inside JSON strings into unescaped '"'
+        text = plain_text(text)
+    return Completion(text=text.strip(), tokens=r.usage.total_tokens if r.usage else 0)
