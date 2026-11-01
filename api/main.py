@@ -1,4 +1,4 @@
-"""Task 11 - FastAPI deployment of the support crew (+ Task 12 structured logging).
+"""FastAPI deployment of the support crew, with structured JSON-Lines logging.
 
     GET  /health                    liveness + index sizes
     POST /ask                       one question -> SupportResponse-backed answer

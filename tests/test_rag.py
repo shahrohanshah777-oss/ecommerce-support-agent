@@ -1,4 +1,4 @@
-"""Tests for Tasks 3-5: chunking, grounded generation / fallback, P/R arithmetic."""
+"""Tests for the RAG core: chunking, grounded generation / fallback, P/R arithmetic."""
 import config
 
 import rag.eval_retrieval as ev

@@ -1,0 +1,23 @@
+# Transcript: response_cache
+# MOCK_LLM=True
+# Generated: 2026-11-01T13:53:40
+
+Cache key = normalize(query) -> 'what is the return window for footwear'
+
+1) Grounded-generation step called directly
+  call 1 (miss): generator calls 0 -> 1, retrievals 1 -> 2,    61.9 ms
+  call 2 (hit) : generator calls 1 -> 1, retrievals 2 -> 2,     0.1 ms
+  call 3 (hit) : '   what is the RETURN window for footwear  ' -> generator calls 1 -> 1,     0.1 ms (normalised key)
+  same answer every time: True
+  cache stats: {'entries': 1, 'hits': 2, 'misses': 1}
+
+2) Through the full pipeline (crew + review): the RAG tool still runs, but its
+   generation step is served from the cache on the repeat
+  request 1: generator calls 1 -> 2  (  252.5 ms)  rag_lookup calls=1
+  request 2: generator calls 2 -> 2  (  117.7 ms)  rag_lookup calls=1
+  identical answers: True
+
+3) Invalidation: re-indexing (also done by POST /add-document) clears the cache
+  before build_index(): {'entries': 1, 'hits': 3, 'misses': 2}
+  after  build_index(): {'entries': 0, 'hits': 3, 'misses': 2}
+  next identical query is a miss again: generator calls 2 -> 3

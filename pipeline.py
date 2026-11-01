@@ -75,12 +75,12 @@ def verify_draft(run: CrewRun) -> GroundednessResult:
 
 
 def review_run(run: CrewRun):
-    """Task 14: Autogen review of the Composer's draft against the original context."""
+    """Autogen review of the Composer's draft against the original context."""
     order, missing = _tool_order(run)
     return review_draft(run.response.answer, run.retrieval.get("context", []), template_sentences(order, missing))
 
 
-REVIEW_ENABLED = True  # demos may switch the Autogen stage off to isolate the Task 10 guardrail
+REVIEW_ENABLED = True  # demos may switch the Autogen stage off to isolate the groundedness guardrail
 
 
 def _respond(resolved_query: str) -> dict:

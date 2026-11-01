@@ -1,4 +1,4 @@
-"""Task 14 - Autogen review stage after the crew's draft answer.
+"""Autogen review stage after the crew's draft answer.
 
 A 2-agent RoundRobinGroupChat (Policy-Compliance-Reviewer -> Final-Editor),
 bounded with max_turns=2. The Final-Editor answers with a structured

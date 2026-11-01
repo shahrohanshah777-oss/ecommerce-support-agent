@@ -1,4 +1,4 @@
-"""Tests for Task 11 (FastAPI + WebSocket) and Task 12 (JSON-Lines logging)."""
+"""Tests for the FastAPI app (HTTP + WebSocket) and JSON-Lines logging."""
 import json
 
 import config

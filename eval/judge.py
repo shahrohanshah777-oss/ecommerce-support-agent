@@ -1,4 +1,4 @@
-"""Task 13 - LLM-as-judge scoring Accuracy, Grounding, Completeness and Safety.
+"""LLM-as-judge scoring Accuracy, Grounding, Completeness and Safety.
 
 The judge is prompted with JUDGE_PROMPT and must return a JudgeVerdict JSON. Under
 MOCK_LLM, MockJudge applies the same rubric deterministically. It checks against

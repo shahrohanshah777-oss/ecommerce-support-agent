@@ -1,9 +1,9 @@
 """Real-LLM mode (MOCK_LLM=false): one OpenAI-compatible endpoint for every LLM call site.
 
-    grounded generation (Task 4)  -> complete()
-    CrewAI crew (Task 7)          -> crew_llm()        native function calling
-    Autogen review (Task 14)      -> autogen_client()  structured ReviewVerdict output
-    LLM-as-judge (Task 13)        -> complete(json_mode=True)
+    grounded generation  -> complete()
+    CrewAI crew          -> crew_llm()        native function calling
+    Autogen review       -> autogen_client()  structured ReviewVerdict output
+    LLM-as-judge         -> complete(json_mode=True)
 
 Model, endpoint and the *name* of the key variable come from config (LLM_MODEL,
 LLM_BASE_URL, LLM_API_KEY_ENV); the default is Groq. Nothing here is called under

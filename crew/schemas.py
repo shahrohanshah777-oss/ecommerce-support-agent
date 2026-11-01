@@ -1,4 +1,4 @@
-"""Task 9 - the structured-output schema every crew response must conform to."""
+"""The structured-output schema every crew response must conform to."""
 from __future__ import annotations
 
 from typing import Literal

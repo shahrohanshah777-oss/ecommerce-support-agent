@@ -1,4 +1,4 @@
-"""Tests for Task 1 (dataset) and Task 2 (knowledge base) thresholds."""
+"""Tests for the dataset and knowledge-base thresholds."""
 import re
 
 import config

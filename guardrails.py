@@ -1,4 +1,4 @@
-"""Task 10 - input-side guardrails (PII masking, prompt-injection detection) and the
+"""Input-side guardrails (PII masking, prompt-injection detection) and the
 output-side groundedness check.
 
 PII scope: phone numbers and payment-card last-4 digits are fixed-format and are

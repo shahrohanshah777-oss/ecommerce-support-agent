@@ -1,4 +1,4 @@
-"""Task 3 - two chunking strategies over the knowledge base.
+"""Two chunking strategies over the knowledge base.
 
 * fixed:    sliding windows of FIXED_CHUNK_WORDS words, overlapping by
             FIXED_CHUNK_OVERLAP words (windows ignore sentence boundaries).

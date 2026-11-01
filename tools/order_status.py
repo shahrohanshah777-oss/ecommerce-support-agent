@@ -1,4 +1,4 @@
-"""Task 6 - order lookup with a designed escalation score.
+"""Order lookup with a designed escalation score.
 
     escalation_score = W_DELAY * delayed_shipment + W_AGE * (days_since_created / 30)
                      = 0.6 * delayed + 0.4 * age        (age in [0, 1])
@@ -10,7 +10,7 @@
 * ESCALATION_THRESHOLD = 0.70  <=>  delayed AND days_since_created >= 8, i.e. the
   order is late *and* older than the KB's 7-day upper delivery SLA. In the
   generated data the delayed orders' ages form two clusters (3-6 days and 12-24
-  days) and 0.70 falls in the gap; see demos/task06_order_status.py for the
+  days) and 0.70 falls in the gap; see demos/order_status_tool.py for the
   percentile justification.
 """
 from __future__ import annotations

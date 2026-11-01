@@ -2,7 +2,7 @@
 
 "Before" is read from eval/results_v2_baseline.json, which was committed (with the
 v2 queries) before the answer-selection changes. "After" is the current system,
-run live. The Task 13 set served as the development set for these changes, so
+run live. The original 15-query set served as the development set for these changes, so
 v2 is the honest measurement of whether they generalise.
 
 Run:  python -m demos.eval_v2_compare     (writes eval/results_v2_after.json)
@@ -24,7 +24,7 @@ CHANGES = [
 
 def main() -> None:
     before = json.loads((config.ROOT / "eval" / "results_v2_baseline.json").read_text(encoding="utf-8"))
-    print("Changes evaluated (designed on the Task 13 development set only):")
+    print("Changes evaluated (designed on the original development set only):")
     for c in CHANGES:
         print(f"  - {c}")
     print(f"\nHeld-out set v2: {len(TESTSET_V2)} queries | before = frozen baseline, after = live run\n")

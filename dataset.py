@@ -1,4 +1,4 @@
-"""Task 1 - seeded, deterministic Nykaa order dataset.
+"""Seeded, deterministic Nykaa order dataset.
 
 Design choices (also stated in README.md so the grader can reproduce):
 

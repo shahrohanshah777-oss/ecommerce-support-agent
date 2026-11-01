@@ -53,8 +53,8 @@ CONTRADICTS = [
     ("07_loyalty_points", "Reward points never expire."),
 ]
 
-# Real model output (openai/gpt-oss-20b via Groq, 2026-10-31) for the Task 4
-# in-scope calibration queries (demos/task04_calibrate.py IN_SCOPE; none is in an
+# Real model output (openai/gpt-oss-20b via Groq, 2026-10-31) for the
+# in-scope calibration queries (demos/idk_calibration.py IN_SCOPE; none is in an
 # eval set). Each sentence was checked by hand against its KB document and is
 # CORRECT. Scored against the same evidence the generator saw (retrieval is
 # deterministic, so the demo rebuilds it offline from the query).

@@ -1,4 +1,4 @@
-"""Task 16 - in-memory LRU cache for the grounded-generation step, keyed by
+"""In-memory LRU cache for the grounded-generation step, keyed by
 normalised query text. Cleared whenever the index changes (build / add-document),
 so a cached "I don't know" can never hide newly added knowledge."""
 from __future__ import annotations

@@ -1,0 +1,32 @@
+# Transcript: chunk_indexing
+# MOCK_LLM=True
+# Generated: 2026-11-01T13:49:41
+
+Embedding model : sentence-transformers/all-MiniLM-L6-v2 (local SentenceTransformers, normalised vectors)
+Fixed strategy  : 40-word windows, 10-word overlap
+Sentence strategy: one chunk per sentence
+Embedded text   : '<doc title>: <chunk>' (contextual header); stored text is the raw chunk
+
+Collection kb_fixed    : 42 chunks  (distance: cosine)
+Collection kb_sentence : 52 chunks  (distance: cosine)
+
+Example - document 01_return_window chunked both ways:
+  [kb_fixed]
+    01_return_window::kb_fixed::0: Nykaa accepts returns within a category-specific window that is counted from the delivery date. Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Beauty products can be returned within 7
+    01_return_window::kb_fixed::1: within 7 days. Beauty products can be returned within 7 days only if the seal is unbroken and the product is unused, because opened cosmetics cannot be resold for hygiene reasons. Every return must include the original tags, packaging and
+    01_return_window::kb_fixed::2: reasons. Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
+  [kb_sentence]
+    01_return_window::kb_sentence::0: Nykaa accepts returns within a category-specific window that is counted from the delivery date.
+    01_return_window::kb_sentence::1: Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days.
+    01_return_window::kb_sentence::2: Beauty products can be returned within 7 days only if the seal is unbroken and the product is unused, because opened cosmetics cannot be resold for hygiene reasons.
+    01_return_window::kb_sentence::3: Every return must include the original tags, packaging and any free gifts, otherwise it may be rejected at quality check.
+
+Sample query on both collections: 'How long do I have to return shoes?'
+  [kb_fixed]
+    sim=0.516  09_size_exchange       Apparel and Footwear can be exchanged for a different size of the same product within 15 d
+    sim=0.484  01_return_window       within 7 days. Beauty products can be returned within 7 days only if the seal is unbroken 
+    sim=0.473  01_return_window       Nykaa accepts returns within a category-specific window that is counted from the delivery 
+  [kb_sentence]
+    sim=0.713  01_return_window       Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Ele
+    sim=0.533  09_size_exchange       Apparel and Footwear can be exchanged for a different size of the same product within 15 d
+    sim=0.504  05_warranty_terms      Apparel, Footwear and Beauty products carry no warranty, but a manufacturing defect report

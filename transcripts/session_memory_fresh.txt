@@ -1,0 +1,19 @@
+# Transcript: session_memory_fresh
+# MOCK_LLM=True
+# Generated: 2026-11-01T13:51:05
+
+Session session-fresh - a NEW conversation (no prior turns)
+
+--- Turn 1 | history before: 0 messages
+User           : How many days do I have to return it?
+Resolved query : How many days do I have to return it?   (unchanged)
+Tools invoked  : {'rag_lookup': ['How many days do I have to return it?'], 'check_order_status': []}
+Order in reply : None
+Assistant      : Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 days. Beauty products can be returned within 7 days only if the seal is unbroken and the product is unused, because opened cosmetics cannot be resold for hygiene reasons. If your question is about a specific order, please share its order ID (for example NYK-1234) so I can check it.
+
+Stored history for session session-fresh (InMemoryChatMessageHistory):
+  human: How many days do I have to return it?
+  ai   : Apparel and Footwear can be returned within 15 days, Home products within 10 days, and Electronics within 7 da
+
+PASS: the same follow-up in a fresh session has no order to refer to - nothing leaked from
+the other session; the agent answers the general policy and asks for the order ID.

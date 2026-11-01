@@ -1,4 +1,4 @@
-"""Real-LLM mode - the full pipeline and the Task 13 evaluation on a real model.
+"""Real-LLM mode - the full pipeline and the 15-query evaluation on a real model.
 
 NOT part of the graded MOCK_LLM evidence (run_all_demos.py never runs it). It
 forces MOCK_LLM=false, so all four LLM call sites use config.LLM_MODEL at
@@ -7,7 +7,7 @@ the Autogen review team and the LLM judge. Guardrails, memory, governance and
 the output groundedness check (NLI-based in this mode) run unchanged around it.
 
 Needs an API key in the variable named by config.LLM_API_KEY_ENV (default GROQ_API_KEY).
-Run:  python -m demos.real_llm_mode          (showcase + 15-query Task 13 test set)
+Run:  python -m demos.real_llm_mode          (showcase + the 15-query test set)
       python -m demos.real_llm_mode --v2     (also the 15-query held-out set)
       LLM_MODEL=openai/gpt-oss-20b python -m demos.real_llm_mode   (another model)
 Output is not deterministic: a rerun can differ. One run uses ~140k tokens; Groq's
@@ -86,7 +86,7 @@ def main() -> None:
     print(f"  NLI entailment ({config.NLI_MODEL}) is recorded per sentence as advisory, not enforced\n")
     tokens = showcase()
     print(f"\nShowcase total: {tokens:,} tokens")
-    run_eval("task13", TESTSET, "results_real_llm_task13.json")
+    run_eval("testset", TESTSET, "results_real_llm.json")
     if "--v2" in sys.argv:
         run_eval("v2", TESTSET_V2, "results_real_llm_v2.json")
 

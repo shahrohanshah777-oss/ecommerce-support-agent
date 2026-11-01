@@ -20,7 +20,7 @@ A customer-support agent that answers Nykaa policy questions from a knowledge ba
 
 **Price-range reasoning:** Rs 199 – Rs 14,999 covers everything from a single lipstick or sheet mask at the low end to premium beauty electronics (hair dryers, stylers) at the top, which matches Nykaa's actual price spread.
 
-**Generated result** (`transcripts/task01_dataset.txt`):
+**Generated result** (`transcripts/order_dataset.txt`):
 
 | Category | Count | | Status | Count |
 |---|---|---|---|---|
@@ -54,27 +54,27 @@ The first run downloads the free local embedding model `all-MiniLM-L6-v2` (~90 M
 
 | What | Code | Evidence (transcript) |
 |---|---|---|
-| Seeded order dataset + validation | `dataset.py` | `task01_dataset.txt` |
-| 13-document knowledge base | `kb/`, `rag/kb.py` | `task02_kb.txt` |
-| Fixed + sentence chunking, two ChromaDB collections | `rag/chunking.py`, `rag/index.py` | `task03_indexing.txt` |
-| Calibrated IDK threshold, grounded generation | `rag/generate.py` | `task04_calibrate.txt`, `task04_grounded.txt` |
-| Precision / recall for both collections | `rag/eval_retrieval.py` | `task05_retrieval_eval.txt` |
-| `check_order_status` + escalation score | `tools/order_status.py` | `task06_order_status.txt` |
-| 3-agent CrewAI crew via `.kickoff()` | `crew/crew.py`, `tools/crew_tools.py`, `llm/mock_llm.py` | `task07_crew.txt` |
-| LangChain session memory (+ fresh session) | `memory.py`, `pipeline.py` | `task08_memory_multiturn.txt`, `task08_memory_fresh.txt` |
-| Pydantic structured output | `crew/schemas.py` | `task09_schema.txt` |
-| PII masking, injection detection, groundedness | `guardrails.py` | `task10_guardrails.txt` |
-| FastAPI: `/ask`, `/add-document`, WebSocket | `api/main.py` | `task11_api.txt` |
-| JSON-Lines logs with trace IDs, PII-safe | `observability.py` | `task12_logging.txt` |
-| LLM-as-judge on 15 queries | `eval/judge.py`, `eval/testset.py` | `task13_eval.txt`, `eval/results_task13.json` |
-| Autogen review stage | `review/autogen_review.py`, `review/mock_client.py` | `task14_review.txt` |
-| Least autonomy, risk level, token budget | `governance.py` | `task15_governance.txt` |
-| Response cache | `rag/cache.py` | `task16_cache.txt` |
+| Seeded order dataset + validation | `dataset.py` | `order_dataset.txt` |
+| 13-document knowledge base | `kb/`, `rag/kb.py` | `knowledge_base.txt` |
+| Fixed + sentence chunking, two ChromaDB collections | `rag/chunking.py`, `rag/index.py` | `chunk_indexing.txt` |
+| Calibrated IDK threshold, grounded generation | `rag/generate.py` | `idk_calibration.txt`, `grounded_answers.txt` |
+| Precision / recall for both collections | `rag/eval_retrieval.py` | `retrieval_eval.txt` |
+| `check_order_status` + escalation score | `tools/order_status.py` | `order_status_tool.txt` |
+| 3-agent CrewAI crew via `.kickoff()` | `crew/crew.py`, `tools/crew_tools.py`, `llm/mock_llm.py` | `crew_kickoff.txt` |
+| LangChain session memory (+ fresh session) | `memory.py`, `pipeline.py` | `session_memory_multiturn.txt`, `session_memory_fresh.txt` |
+| Pydantic structured output | `crew/schemas.py` | `structured_output.txt` |
+| PII masking, injection detection, groundedness | `guardrails.py` | `guardrail_checks.txt` |
+| FastAPI: `/ask`, `/add-document`, WebSocket | `api/main.py` | `api_endpoints.txt` |
+| JSON-Lines logs with trace IDs, PII-safe | `observability.py` | `structured_logging.txt` |
+| LLM-as-judge on 15 queries | `eval/judge.py`, `eval/testset.py` | `llm_judge_eval.txt`, `eval/results_testset.json` |
+| Autogen review stage | `review/autogen_review.py`, `review/mock_client.py` | `autogen_review.txt` |
+| Least autonomy, risk level, token budget | `governance.py` | `governance_controls.txt` |
+| Response cache | `rag/cache.py` | `response_cache.txt` |
 | Held-out re-evaluation of the improvements | `demos/eval_v2_compare.py` | `eval_v2_baseline.txt`, `eval_v2_compare.txt` |
-| Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `phase1_mock_llm_spike.txt` |
-| Optional real-LLM mode (not graded) | `llm/providers.py`, `demos/real_llm_mode.py` | `real_llm_mode.txt`, `eval/results_real_llm_task13.json`, `real_llm_grounding_calibrate.txt`, `real_llm_mode_strict_nli_gate.txt`, `eval/results_real_llm_task13_strict_nli_gate.json` |
+| Mock-LLM spike (both CrewAI pitfalls) | `llm/mock_llm.py`, `tests/test_mock_llm.py` | `mock_llm_spike.txt` |
+| Optional real-LLM mode (not graded) | `llm/providers.py`, `demos/real_llm_mode.py` | `real_llm_mode.txt`, `eval/results_real_llm.json`, `real_llm_grounding_calibrate.txt`, `real_llm_mode_strict_nli_gate.txt`, `eval/results_real_llm_strict_nli_gate.json` |
 
-Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/`. **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passed all 88 tests and 18 demos at the time (the real-LLM mode and its 21 tests were added afterwards; the mock transcripts are unchanged by it). It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`task11_api`, `task12_logging`) and millisecond timings (`task16_cache`).
+Transcripts are in `transcripts/`, and each one is produced by the demo of the same name in `demos/` (`session_memory` writes two, and `api_and_logging` writes `api_endpoints` and `structured_logging`). **Reproducibility check:** a fresh clone with a new virtualenv, installed from `requirements.txt` and with a freshly built index, passed all 88 tests and 18 demos at the time (the real-LLM mode and its 21 tests were added afterwards; the mock transcripts are unchanged by it). It regenerates every transcript byte-for-byte, except the values that are random or timed by design: trace IDs and ports (`api_endpoints`, `structured_logging`) and millisecond timings (`response_cache`).
 
 ## Acceptance criteria checklist
 
@@ -83,29 +83,29 @@ Transcripts are in `transcripts/`, and each one is produced by the demo of the s
 - [x] 13 KB documents (≥ 12) covering all 12 required topics, 3–5 sentences each. Evidence: [Knowledge base](#knowledge-base)
 - [x] Both chunking strategies embedded and indexed into two separate collections, with sensible retrieval on a sample query in both. Evidence: [Chunking strategies](#two-chunking-strategies-two-collections)
 - [x] Threshold calibrated on 12 in-scope + 10 out-of-scope queries (0.34, measured values stated); 5 in-scope answers + 1 out-of-scope fallback. Evidence: ["I don't know" threshold](#i-dont-know-threshold-calibrated-empirically)
-- [x] P/R for both collections on the same 5 queries, with per-query arithmetic and a numbers-cited recommendation. Evidence: [Precision / recall](#precision--recall-per-collection-transcriptstask05_retrieval_evaltxt)
+- [x] P/R for both collections on the same 5 queries, with per-query arithmetic and a numbers-cited recommendation. Evidence: [Precision / recall](#precision--recall-per-collection-transcriptsretrieval_evaltxt)
 
 **CrewAI orchestration**
 - [x] `check_order_status` with a designed, justified `escalation_score` (0.6 × delayed + 0.4 × age; threshold 0.70 = 86.7th percentile). Evidence: [Escalation score](#check_order_status-and-the-escalation-score-toolsorder_statuspy)
-- [x] Retrieval, Lookup and Composer agents; both tools invoked on different queries via `.kickoff()`. Evidence: [The crew](#the-crew-crewcrewpy-transcriptstask07_crewtxt)
+- [x] Retrieval, Lookup and Composer agents; both tools invoked on different queries via `.kickoff()`. Evidence: [The crew](#the-crew-crewcrewpy-transcriptscrew_kickofftxt)
 - [x] Multi-turn memory, plus a separate fresh-session transcript showing state absent. Evidence: [Session memory](#session-memory-memorypy)
-- [x] Every crew response validated against `SupportResponse`. Evidence: [Structured output](#structured-output-crewschemaspy-transcriptstask09_schematxt)
-- [x] PII masking, injection detection and groundedness each fire on a deliberate test case. Evidence: [Guardrails](#guardrails-guardrailspy-transcriptstask10_guardrailstxt)
+- [x] Every crew response validated against `SupportResponse`. Evidence: [Structured output](#structured-output-crewschemaspy-transcriptsstructured_outputtxt)
+- [x] PII masking, injection detection and groundedness each fire on a deliberate test case. Evidence: [Guardrails](#guardrails-guardrailspy-transcriptsguardrail_checkstxt)
 
 **Evaluation, observability and FastAPI**
-- [x] 2 HTTP endpoints + 1 WebSocket with Pydantic models; survives a client disconnect mid-conversation. Evidence: [Endpoints](#endpoints-apimainpy-transcriptstask11_apitxt)
-- [x] One JSON-Lines entry with a trace ID per request; no raw PII on disk. Evidence: [JSON-Lines logs](#json-lines-logs-observabilitypy-transcriptstask12_loggingtxt)
-- [x] Accuracy, Grounding, Completeness and Safety for all 15 queries + averages, under `MOCK_LLM`. Evidence: [Evaluation](#evaluation-transcriptstask13_evaltxt-evalresults_task13json)
+- [x] 2 HTTP endpoints + 1 WebSocket with Pydantic models; survives a client disconnect mid-conversation. Evidence: [Endpoints](#endpoints-apimainpy-transcriptsapi_endpointstxt)
+- [x] One JSON-Lines entry with a trace ID per request; no raw PII on disk. Evidence: [JSON-Lines logs](#json-lines-logs-observabilitypy-transcriptsstructured_loggingtxt)
+- [x] Accuracy, Grounding, Completeness and Safety for all 15 queries + averages, under `MOCK_LLM`. Evidence: [Evaluation](#evaluation-transcriptsllm_judge_evaltxt-evalresults_testsetjson)
 
 **Resilience and governance**
-- [x] Autogen review approves one draft unchanged and revises another, with structured verdicts. Evidence: [Autogen review](#autogen-review-stage-reviewautogen_reviewpy-transcriptstask14_reviewtxt)
-- [x] Only the Lookup Agent can call the lookup tool (demonstrated); risk classified (Medium) with justification; an oversized request is rejected by the budget cap. Evidence: [Governance](#four-layer-governance-governancepy-transcriptstask15_governancetxt)
-- [x] Cache hit on a repeated query, with call-counter and timing evidence. Evidence: [Response cache](#response-cache-ragcachepy-transcriptstask16_cachetxt)
+- [x] Autogen review approves one draft unchanged and revises another, with structured verdicts. Evidence: [Autogen review](#autogen-review-stage-reviewautogen_reviewpy-transcriptsautogen_reviewtxt)
+- [x] Only the Lookup Agent can call the lookup tool (demonstrated); risk classified (Medium) with justification; an oversized request is rejected by the budget cap. Evidence: [Governance](#four-layer-governance-governancepy-transcriptsgovernance_controlstxt)
+- [x] Cache hit on a repeated query, with call-counter and timing evidence. Evidence: [Response cache](#response-cache-ragcachepy-transcriptsresponse_cachetxt)
 - [x] `CREWAI_DISABLE_TELEMETRY=true` set; everything runs under `MOCK_LLM` with no API keys. Evidence: [offline section](#runs-fully-offline-under-mock_llm)
 
 ## Knowledge base
 
-`kb/` contains 13 documents of 3–5 sentences each: the 12 required topics plus an order-status glossary. The topic-to-document mapping is in `rag/kb.py::REQUIRED_TOPICS`, and the inventory is in `transcripts/task02_kb.txt`. All policies were written for this project and are **fictional**. They are internally consistent (e.g. the delivery SLA defines `delayed_shipment`, and the escalation matrix uses a Rs 5,000 threshold), but they are not Nykaa's real policies.
+`kb/` contains 13 documents of 3–5 sentences each: the 12 required topics plus an order-status glossary. The topic-to-document mapping is in `rag/kb.py::REQUIRED_TOPICS`, and the inventory is in `transcripts/knowledge_base.txt`. All policies were written for this project and are **fictional**. They are internally consistent (e.g. the delivery SLA defines `delayed_shipment`, and the escalation matrix uses a Rs 5,000 threshold), but they are not Nykaa's real policies.
 
 ## Runs fully offline under `MOCK_LLM`
 
@@ -123,12 +123,12 @@ Transcripts are in `transcripts/`, and each one is produced by the demo of the s
 | Fixed-size with overlap | `kb_fixed` | 42 | 40-word windows, 10-word overlap (ignores sentence boundaries) |
 | Sentence-based | `kb_sentence` | 52 | one sentence per chunk |
 
-Both strategies are embedded with **`sentence-transformers/all-MiniLM-L6-v2`** (local, normalised vectors) and `collection.upsert()`-ed into **separate** persistent ChromaDB collections that use cosine distance. Each chunk is embedded as `"<document title>: <chunk>"` (a *contextual chunk header*), while the stored text stays the raw chunk. Without the header, short policy sentences lose their topic: "Nykaa currently delivers only to addresses within India" never says "shipping". In the first calibration run without headers, the in-scope and out-of-scope groups **overlapped**, and "Do you ship to Dubai?" retrieved the wrong document. Evidence: `transcripts/task03_indexing.txt`.
+Both strategies are embedded with **`sentence-transformers/all-MiniLM-L6-v2`** (local, normalised vectors) and `collection.upsert()`-ed into **separate** persistent ChromaDB collections that use cosine distance. Each chunk is embedded as `"<document title>: <chunk>"` (a *contextual chunk header*), while the stored text stays the raw chunk. Without the header, short policy sentences lose their topic: "Nykaa currently delivers only to addresses within India" never says "shipping". In the first calibration run without headers, the in-scope and out-of-scope groups **overlapped**, and "Do you ship to Dubai?" retrieved the wrong document. Evidence: `transcripts/chunk_indexing.txt`.
 
 The model is downloaded from Hugging Face once on first run (~90 MB) and loads from the local cache (`local_files_only=True`) after that. All RAG demos were rerun with every outbound socket blocked and made zero network attempts.
 
 ### "I don't know" threshold, calibrated empirically
-Top-1 cosine similarity measured on 12 in-scope and 10 out-of-scope queries (`transcripts/task04_calibrate.txt`):
+Top-1 cosine similarity measured on 12 in-scope and 10 out-of-scope queries (`transcripts/idk_calibration.txt`):
 
 | Collection | In-scope min | In-scope mean | Out-of-scope max | Out-of-scope mean | Gap midpoint |
 |---|---|---|---|---|---|
@@ -137,11 +137,11 @@ Top-1 cosine similarity measured on 12 in-scope and 10 out-of-scope queries (`tr
 
 **Chosen threshold: `IDK_THRESHOLD = 0.34`**, which sits inside the observed gap for both collections. The common tutorial presets would be wrong here: 0.5 wrongly refuses 2/12 in-scope queries, 0.6 refuses 6–7/12, and 0.7 refuses 11–12/12. **Caveat:** the gap is only about 0.02 wide. The closest cases are "Do you ship to Dubai?" (in-scope, 0.35) and "Write a Python function to reverse a linked list" (out-of-scope, 0.33, which matches *reverse pickup* on one word). In production I'd add a cross-encoder re-ranker or an LLM relevance check rather than rely on a single cosine cut-off.
 
-**Grounded generation** (`rag/generate.py`, `transcripts/task04_grounded.txt`): retrieve top-3 chunks. If top-1 < 0.34, return the fallback. Otherwise, use **small-to-big** generation: the generator sees every chunk of the top-ranked document (not only the matched sentence) and, under `MOCK_LLM`, an **extractive** generator quotes the 2 sentences of that document that best match the query (dense cosine + 0.4 × IDF-weighted keyword overlap, both computed on `"<title>: <sentence>"`), in document order. Every quoted sentence is verbatim evidence, and the demo asserts this. The demo answers 5 in-scope queries and refuses 1 out-of-scope query ("book me a train ticket", top-1 0.295 / 0.331) on both collections.
+**Grounded generation** (`rag/generate.py`, `transcripts/grounded_answers.txt`): retrieve top-3 chunks. If top-1 < 0.34, return the fallback. Otherwise, use **small-to-big** generation: the generator sees every chunk of the top-ranked document (not only the matched sentence) and, under `MOCK_LLM`, an **extractive** generator quotes the 2 sentences of that document that best match the query (dense cosine + 0.4 × IDF-weighted keyword overlap, both computed on `"<title>: <sentence>"`), in document order. Every quoted sentence is verbatim evidence, and the demo asserts this. The demo answers 5 in-scope queries and refuses 1 out-of-scope query ("book me a train ticket", top-1 0.295 / 0.331) on both collections.
 
 *Why small-to-big:* single-sentence chunks reliably find the right *document* but often not the sentence holding the answer. In the first version, "What is the return window for electronics?" retrieved the right document top-1, but the "…Electronics within 7 days" sentence ranked 4th and could never be quoted. See [Improvement round](#improvement-round-small-to-big-generation-validated-on-a-held-out-set) for the diagnosis and the before/after evaluation. *Caveat:* the selector's keyword weight was set while looking at these 5 demo queries, so they aren't a held-out test.
 
-### Precision / recall per collection (`transcripts/task05_retrieval_eval.txt`)
+### Precision / recall per collection (`transcripts/retrieval_eval.txt`)
 Top-3 chunks → parent `doc_id` → de-duplicated → scored against hand-labelled relevant documents.
 
 | Query | Relevant | `kb_fixed` P | `kb_fixed` R | `kb_sentence` P | `kb_sentence` R |
@@ -166,10 +166,10 @@ escalate  ⇔  escalation_score ≥ 0.70
 ```
 
 * **Design:** a delayed shipment is the dominant signal. A non-delayed order tops out at 0.40, so it can never escalate on age alone. Among delayed orders, age breaks ties: the longer a late order has been open, the more urgent it is.
-* **Threshold 0.70** means *delayed and `days_since_created` ≥ 8*, i.e. late and past the KB's 7-day upper delivery SLA. In the generated data, the 14 delayed orders' ages form two clusters (**3–6 days** and **12–24 days**), and 0.70 falls exactly in the gap (scores 0.680 vs 0.760). The threshold is the **86.7th percentile** of `escalation_score` in my data and flags **8/60 orders (13.3%)**, a manageable Level-2 queue (`transcripts/task06_order_status.txt`).
+* **Threshold 0.70** means *delayed and `days_since_created` ≥ 8*, i.e. late and past the KB's 7-day upper delivery SLA. In the generated data, the 14 delayed orders' ages form two clusters (**3–6 days** and **12–24 days**), and 0.70 falls exactly in the gap (scores 0.680 vs 0.760). The threshold is the **86.7th percentile** of `escalation_score` in my data and flags **8/60 orders (13.3%)**, a manageable Level-2 queue (`transcripts/order_status_tool.txt`).
 * *Possible extension:* the score ignores status, so a delayed order that has already been Refunded still scores high. A production version would down-weight terminal statuses.
 
-### The crew (`crew/crew.py`, `transcripts/task07_crew.txt`)
+### The crew (`crew/crew.py`, `transcripts/crew_kickoff.txt`)
 Three agents run sequentially via `crew.kickoff()`. Each has its own `MockLLM` and only the tools it needs:
 
 | Agent | Tool | Output |
@@ -184,7 +184,7 @@ Two refinements that came out of the demo, and are documented in the transcript:
 * **Order IDs are stripped from the retrieval query** (`rag.generate.policy_query`). They never occur in the KB and only added noise. Before this fix, "Can I cancel my order NYK-1004?" quoted the out-of-stock sentence.
 * **Policy is attached to an order answer only when retrieval is strong** (`ORDER_POLICY_MIN_SIM = 0.49`), calibrated the same way as the IDK threshold. Pure status questions ("Where is my order NYK-1009?") top out at 0.480, while order + policy questions start at 0.508. Without this, status answers got an irrelevant policy sentence appended.
 
-### Structured output (`crew/schemas.py`, `transcripts/task09_schema.txt`)
+### Structured output (`crew/schemas.py`, `transcripts/structured_output.txt`)
 `SupportResponse` (`answer`, `intent ∈ {policy, order_status, out_of_scope}`, `grounded`, `sources`, `order: OrderInfo | None`, `escalate`, `retrieval_top_similarity`; `extra="forbid"`, bounded numbers, an ID pattern) is enforced at three points:
 1. The Composer task declares `output_pydantic=SupportResponse`, and CrewAI passes it to the LLM as `response_model` (the response-format contract).
 2. `MockLLM` validates its own final answer against `response_model` before returning it, as a real structured-output API would.
@@ -206,12 +206,12 @@ raw query ─► mask_pii ─► detect_injection ─► check_budget ─► mem
 ### Session memory (`memory.py`)
 One `InMemoryChatMessageHistory` per `session_id`, wrapped around the crew with `RunnableWithMessageHistory` (in-process only, which the brief allows). Under `MOCK_LLM`, history-aware query rewriting is deterministic: a follow-up that refers to an order without naming it ("…return **it**?", "is **my order**…") inherits the most recent order ID in that session's history.
 
-* `transcripts/task08_memory_multiturn.txt`: turn 1 asks about NYK-1009. Turns 2 and 3 ("How many days do I have to return it?", "Is it going to be escalated?") never mention the ID, yet both are resolved to NYK-1009 from memory. Turn 2 combines the order facts (Footwear, delivered 15 days ago) with the 15-day Footwear return rule.
-* `transcripts/task08_memory_fresh.txt`: the **same** follow-up in a new session has nothing to resolve. The lookup tool is not called, no order appears, and the agent answers the general policy and asks for the order ID.
+* `transcripts/session_memory_multiturn.txt`: turn 1 asks about NYK-1009. Turns 2 and 3 ("How many days do I have to return it?", "Is it going to be escalated?") never mention the ID, yet both are resolved to NYK-1009 from memory. Turn 2 combines the order facts (Footwear, delivered 15 days ago) with the 15-day Footwear return rule.
+* `transcripts/session_memory_fresh.txt`: the **same** follow-up in a new session has nothing to resolve. The lookup tool is not called, no order appears, and the agent answers the general policy and asks for the order ID.
 * `RunnableWithMessageHistory` and `InMemoryChatMessageHistory` emit `LangChainDeprecationWarning`s pointing to LangGraph persistence. As the brief notes, these are expected and the classes work.
 * *Limitation:* very short follow-ups ("Can I still return it?", top-1 0.458) retrieve the right return sentence but score below pure status questions (up to 0.480). With the order-policy cut-off at 0.49, they get the order facts without the policy sentence. A similarity cut-off can't separate these two kinds of question; an LLM intent classifier could.
 
-### Guardrails (`guardrails.py`, `transcripts/task10_guardrails.txt`)
+### Guardrails (`guardrails.py`, `transcripts/guardrail_checks.txt`)
 | Guardrail | Side | How | Deliberate test case (fires) |
 |---|---|---|---|
 | PII masking | input | Regex for Indian mobile numbers (`+91`/`0` prefixes, 5+5 splits) → `[PHONE]`; card last-4 **only after a card cue** ("card ending 4242", "last 4 digits", `**** 3456`) → `[CARD_LAST4]`; full 13–19-digit card numbers → `[CARD_NUMBER]` | `+91 98765 43210` and `Visa card ending 4242` are masked. The demo asserts the raw digits never reach the agents, the tool calls or the stored memory. Order IDs, amounts and pin codes are left untouched (no false positives) |
@@ -224,7 +224,7 @@ The order facts are checked against the **tool's raw output** (`CrewRun.lookup`)
 
 Run the server: `uvicorn api.main:app --port 8000` (interactive docs at `/docs`).
 
-### Endpoints (`api/main.py`, `transcripts/task11_api.txt`)
+### Endpoints (`api/main.py`, `transcripts/api_endpoints.txt`)
 | Endpoint | Models | Behaviour |
 |---|---|---|
 | `GET /health` | n/a | liveness, `MOCK_LLM` flag, chunk counts |
@@ -239,12 +239,12 @@ The demo runs a **real uvicorn server on 127.0.0.1** with a scratch Chroma index
 - **Bad frames:** a malformed frame gets an error reply without closing the connection.
 - **Disconnects:** a client that **sends a message and then kills its TCP connection without reading the reply**. The server catches `WebSocketDisconnect` (close code 1006), logs it, and keeps serving: a second WebSocket client and `GET /health` both succeed afterwards.
 
-### JSON-Lines logs (`observability.py`, `transcripts/task12_logging.txt`)
+### JSON-Lines logs (`observability.py`, `transcripts/structured_logging.txt`)
 Every HTTP request (middleware) and every WebSocket message produces **one JSON object per line**: `@timestamp`, `service`, `event`, unique `trace_id` (also returned as the `X-Trace-ID` header), `latency_ms`, method/path/status, `session_id`, the **masked** query, PII/injection findings, pipeline status, intent and tool-call counts. WebSocket connects and disconnects are logged too (with close code). Validation failures are logged with path and status only; request bodies are never logged raw.
 
 **PII never reaches disk:** the query that gets logged is the same masked text the model saw. As a second safety net, `log_event()` runs every string field through `mask_pii()` before writing. The demo searches the raw log file for the phone and card digits it sent and finds none, only `[PHONE]` / `[CARD_LAST4]`.
 
-## Evaluation: `transcripts/task13_eval.txt`, `eval/results_task13.json`
+## Evaluation: `transcripts/llm_judge_eval.txt`, `eval/results_testset.json`
 
 **Test set** (`eval/testset.py::TESTSET`): 15 queries, one per required KB topic (12) plus 3 deliberate edge cases (near-domain out-of-scope product advice, a prompt injection asking for a coupon, and a query carrying a phone number about a delayed order). Expected key facts are copied from the KB. The queries were **written before running them and not edited after seeing results**. On its first run this set was held out (none of its phrasings were used while building retrieval and the crew). Its failures were then used to improve the generator, so it is now the *development* set, and a second, fresh held-out set measures the improvement (see the next section).
 
@@ -254,7 +254,7 @@ Every HTTP request (middleware) and every WebSocket message produces **one JSON 
 * **Completeness:** fraction of expected key facts present.
 * **Safety:** mean of the checks that apply: no PII in the answer, PII masked before the model, injection blocked, no coupon issued, no fabricated answer to an out-of-scope question.
 
-Scores of the **final system** (`transcripts/task13_eval.txt`). The "first run" column shows this same set's scores before the improvement round (commit `59285ad`):
+Scores of the **final system** (`transcripts/llm_judge_eval.txt`). The "first run" column shows this same set's scores before the improvement round (commit `59285ad`):
 
 | ID | Topic | Accuracy | Grounding | Completeness | Safety | First run (Acc / Comp) |
 |---|---|---|---|---|---|---|
@@ -314,7 +314,7 @@ Two things were also fixed along the way:
 
 ## Resilience and governance
 
-### Autogen review stage (`review/autogen_review.py`, `transcripts/task14_review.txt`)
+### Autogen review stage (`review/autogen_review.py`, `transcripts/autogen_review.txt`)
 After the crew drafts an answer, a 2-agent Autogen team reviews it before the customer sees it:
 
 ```python
@@ -329,16 +329,16 @@ The team's task contains the Composer's **draft**, the **original retrieved cont
 Demo results:
 * **Approved unchanged:** a policy draft (reward points) and an order draft (NYK-1027 facts), with `approved=True` and `final_answer` identical to the draft.
 * **Revised:** a deliberately injected claim, *"Home products can also be exchanged for free within 60 days."*, gets `approved=False`. Exactly that sentence is removed, and `reason` names it. End to end through `pipeline.handle()`, the customer receives the corrected answer, and the groundedness guardrail still runs afterwards as the last line of defence.
-* The review stage approves grounded drafts unchanged, so adding it left every evaluation score identical, which I checked by regenerating `eval/results_task13.json`.
+* The review stage approves grounded drafts unchanged, so adding it left every evaluation score identical, which I checked by regenerating `eval/results_testset.json`.
 
-### Four-layer governance (`governance.py`, `transcripts/task15_governance.txt`)
+### Four-layer governance (`governance.py`, `transcripts/governance_controls.txt`)
 **Application layer: least autonomy.** `TOOL_PERMISSIONS` is the single allow-list: `check_order_status → {Lookup Agent}`, `rag_lookup → {Retrieval Agent}`. It is enforced twice. First, when the crew is built, `enforce_least_autonomy()` refuses to create any crew in which an agent holds a tool outside the allow-list, or a tool issued to a different role. Second, every tool is *bound* to the role it was issued to, and its `_run()` calls `authorize()` before touching any data, so a tool that reaches the wrong agent by any other route still fails closed (an unbound tool is refused too). The demo shows four refused attempts (Composer wired with the order tool; the Lookup Agent's tool handed to the Retrieval Agent; a call from a tool issued to the Retrieval Agent; an unbound tool) and the one permitted call. The Composer has no tools at all, and the Lookup Agent is the only path to order data.
 
 **Risk classification: Medium.** Under the Low / Medium / High scheme, this system's job is customer-support ticket handling, which the scheme places at Medium. It answers policy questions and reports order status. A wrong answer can mislead a customer about a refund or return deadline, but the system can't act on that answer: it issues no refunds, processes no payments, and only reads a fabricated order table. It does handle financial-adjacent data, though (order values, card last-4 digits that customers type), which is the trait the scheme lists under High. That's why High-tier controls are applied to that data even though the system is Medium overall: card digits and phone numbers are masked before any model, memory or log sees them; the order tool is restricted to one agent; every answer must pass a groundedness check and an independent review; and each request has a hard token budget. If the agent were ever allowed to issue refunds or change orders, it would become High risk and would need human approval for those actions.
 
 **Runtime layer: per-request token/cost budget.** `MockLLM` and the Autogen mock client meter prompt and completion tokens on every call. The pipeline checks a **pre-flight estimate** *before any LLM call*: `estimate = 5,500 + 6 × query_tokens`, with a cap of `TOKEN_BUDGET = 8,500` tokens and an illustrative Rs 0.25 / 1K tokens. Both constants are calibrated from metered usage of the full pipeline (crew + review). The 15 eval queries used 3,245–5,253 tokens, and each extra query token added about 4.5. Every measured request used fewer tokens than estimated. The calibration was redone after the improvement round: small-to-big generation puts a whole policy document into the tool output, and the demo's own assertion caught that the old 5,000-token overhead was no longer an over-estimate. In the demo, a normal request is estimated at 5,542 tokens and actually uses 5,253. A 12,087-character request (a pasted complaint log plus a question) is estimated at 23,632 tokens and **rejected up front**: zero tokens spent, no tool or crew run, and the customer is asked to shorten it. Through `POST /ask`, the same request is already stopped by the API's 2,000-character limit (422), which sits exactly at the budget's edge (a 2,000-character query is estimated at 8,500 tokens).
 
-### Response cache (`rag/cache.py`, `transcripts/task16_cache.txt`)
+### Response cache (`rag/cache.py`, `transcripts/response_cache.txt`)
 An in-memory LRU cache (512 entries) in front of the grounded-generation step, keyed by **normalised query text** (lowercase, collapsed whitespace, trailing `?!.` stripped, order IDs removed) plus collection and k. Evidence from the demo:
 
 | Call | Generator calls | Retrievals | Time |
@@ -384,7 +384,7 @@ Defaults: Groq, `openai/gpt-oss-120b`, temperature 0. Everything else (guardrail
 | Mock (graded evaluation) | `MOCK_LLM` | 0.97 | 1.00 | 0.87 | 1.00 |
 | Development run, before the fixes below | gpt-oss-120b | 0.82 | 0.80 | 0.75 | 1.00 |
 | Strict NLI gate (`transcripts/real_llm_mode_strict_nli_gate.txt`) | gpt-oss-20b | 0.60 | 0.53 | 0.60 | 1.00 |
-| **Final design** (reviewer judges, numbers enforced; `transcripts/real_llm_mode.txt`, `eval/results_real_llm_task13.json`) | gpt-oss-120b | **0.90** | **0.87** | **0.87** | **1.00** |
+| **Final design** (reviewer judges, numbers enforced; `transcripts/real_llm_mode.txt`, `eval/results_real_llm.json`) | gpt-oss-120b | **0.90** | **0.87** | **0.87** | **1.00** |
 
 Every answer the strict-gate run let through was correct, and safety was 1.00, but it refused 6 of 15; the two refusals re-run with full detail (Q03, Q08) were correct answers. That run motivated the decision above.
 
@@ -412,7 +412,7 @@ How it avoids the two silent pitfalls in the brief:
 1. **Template `Observation:` text.** CrewAI's system prompt contains `Observation: the result of the action` on every call. After a tool runs, CrewAI appends `\nObservation: <result>` to the *assistant* message that holds the mock's own `Action:` line. `latest_observation()` reads only those assistant messages and never searches system messages. So the first call (before any tool has run) correctly sees no observation.
 2. **Dispatch by schema, not name.** `choose_tool()` reads each tool's declared `args_schema` and fills its *required argument names*: `record_id` comes from the order-ID pattern `NYK-\d{4,6}`, and `query` comes from the customer's question. A tool is only called if all its required arguments can be filled. Tool names are never inspected, so a tool named `rag_lookup` receives `query`.
 
-Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pytest`) and `transcripts/phase1_mock_llm_spike.txt` (real `crew.kickoff()` runs). The spike was also rerun with all outbound sockets blocked, and it made zero network attempts.
+Evidence: `tests/test_mock_llm.py` (unit tests for both pitfalls, `python -m pytest`) and `transcripts/mock_llm_spike.txt` (real `crew.kickoff()` runs). The spike was also rerun with all outbound sockets blocked, and it made zero network attempts.
 
 ## Known limitations
 

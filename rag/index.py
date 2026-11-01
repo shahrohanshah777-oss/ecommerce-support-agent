@@ -1,4 +1,4 @@
-"""Task 3 - embed chunks locally and index each strategy in its own ChromaDB collection.
+"""Embed chunks locally and index each strategy in its own ChromaDB collection.
 
 Run:  python -m rag.index      (rebuilds both collections)
 """

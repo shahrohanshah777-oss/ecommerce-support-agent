@@ -1,4 +1,4 @@
-"""Knowledge-base loading (Task 2). Each kb/*.md file is one document:
+"""Knowledge-base loading. Each kb/*.md file is one document:
 a `# Title` line followed by a 2-5 sentence policy paragraph."""
 from __future__ import annotations
 

@@ -1,0 +1,27 @@
+# Transcript: mock_llm_spike
+# MOCK_LLM=True
+# Generated: 2026-11-01T13:49:29
+
+CASE A - policy question -> rag_lookup(query)
+    llm decision : [Support Agent] Action rag_lookup {'query': 'What is the return window for footwear?'}
+    llm decision : [Support Agent] Final Answer (73 chars)
+    final answer : [DUMMY KB] Footwear can be returned within 15 days of delivery if unworn.
+    llm calls    : 2
+    PASS
+
+CASE B - order question -> check_order_status(record_id)
+    llm decision : [Support Agent] Action check_order_status {'record_id': 'NYK-1042'}
+    llm decision : [Support Agent] Final Answer (71 chars)
+    final answer : {"record_id": "NYK-1042", "status": "Shipped", "order_value_inr": 1499}
+    llm calls    : 2
+    PASS
+
+CASE C - Retrieval Agent -> Composer (context passing)
+    llm decision : [Retrieval Agent] Action rag_lookup {'query': 'Can I return sneakers after 10 days?'}
+    llm decision : [Retrieval Agent] Final Answer (73 chars)
+    llm decision : [Response Composer] Final Answer (113 chars)
+    final answer : Here is what I found for your question: [DUMMY KB] Footwear can be returned within 15 days of delivery if unworn.
+    PASS
+
+Tool executions: {'rag_lookup': ['What is the return window for footwear?', 'Can I return sneakers after 10 days?'], 'check_order_status': ['NYK-1042']}
+ALL SPIKE CHECKS PASSED

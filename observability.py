@@ -1,4 +1,4 @@
-"""Task 12 - ELK-style structured request logging (one JSON object per line).
+"""ELK-style structured request logging (one JSON object per line).
 
 Every entry carries a trace_id and latency_ms. All string values are passed
 through the same mask_pii() used on model input before they are written, so a

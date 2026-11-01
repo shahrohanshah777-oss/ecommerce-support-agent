@@ -1,9 +1,9 @@
-"""Task 7 - the CrewAI support crew: Retrieval Agent -> Lookup Agent -> Response Composer.
+"""The CrewAI support crew: Retrieval Agent -> Lookup Agent -> Response Composer.
 
-Each agent gets exactly the tools it needs (least autonomy, see Task 15):
+Each agent gets exactly the tools it needs (least autonomy, see governance.py):
   Retrieval Agent   : rag_lookup
   Lookup Agent      : check_order_status
-  Response Composer : no tools; turns both outputs into a SupportResponse (Task 9)
+  Response Composer : no tools; turns both outputs into a SupportResponse
 
 Under MOCK_LLM every agent runs on its own MockLLM; the per-agent `responder`
 functions below are the deterministic stand-ins for what each agent's LLM writes.
@@ -194,7 +194,7 @@ def _llm(mock_name: str, responder):
 
 def build_agents(extra_tools: dict[str, list] | None = None) -> dict[str, Agent]:
     """Each tool is issued to (bound to) exactly one role; governance enforces the
-    allow-list before the crew may run. `extra_tools` exists only so the Task 15
+    allow-list before the crew may run. `extra_tools` exists only so the governance
     demo can attempt a forbidden wiring and show it being refused."""
     common = dict(max_iter=3, allow_delegation=False, verbose=False)
     extra = extra_tools or {}
@@ -269,7 +269,7 @@ def run_crew(query: str) -> CrewRun:
     )
     result = crew.kickoff()
 
-    # Task 9: validate the final output against the schema in code.
+    # Validate the final output against the schema in code.
     response = SupportResponse.model_validate(result.pydantic.model_dump() if result.pydantic
                                               else json.loads(result.raw))
     outputs = [t.raw for t in result.tasks_output]

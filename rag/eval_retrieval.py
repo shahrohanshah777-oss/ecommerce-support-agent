@@ -1,4 +1,4 @@
-"""Task 5 - document-level precision/recall for each chunking strategy.
+"""Document-level precision/recall for each chunking strategy.
 
 Top-k chunks are mapped to their parent doc_id and de-duplicated before scoring:
     precision = |retrieved docs ∩ relevant docs| / |retrieved docs|
@@ -9,7 +9,7 @@ from __future__ import annotations
 import config
 from rag.index import search
 
-# The same 5 in-scope queries demonstrated in Task 4, with hand-labelled relevant docs.
+# The same 5 in-scope queries demonstrated in demos/grounded_answers.py, with hand-labelled relevant docs.
 EVAL_QUERIES = {
     "What is the return window for electronics?": {"01_return_window"},
     "How long does a COD refund take to reach my bank account?": {"02_cod_refund_timelines"},

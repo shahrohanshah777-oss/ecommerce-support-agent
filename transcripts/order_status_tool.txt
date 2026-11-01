@@ -1,0 +1,25 @@
+# Transcript: order_status_tool
+# MOCK_LLM=True
+# Generated: 2026-11-01T13:50:28
+
+escalation_score = 0.6 * delayed_shipment + 0.4 * (days_since_created / 30)
+escalate when escalation_score >= 0.7
+
+Sample lookups:
+  check_order_status('NYK-1001') -> {'found': True, 'record_id': 'NYK-1001', 'category': 'Footwear', 'status': 'Placed', 'order_value_inr': 4519, 'days_since_created': 1, 'delayed_shipment': False, 'escalation_score': 0.013, 'escalate': False}
+  check_order_status('NYK-1003') -> {'found': True, 'record_id': 'NYK-1003', 'category': 'Beauty', 'status': 'Delivered', 'order_value_inr': 2109, 'days_since_created': 3, 'delayed_shipment': True, 'escalation_score': 0.64, 'escalate': False}
+  check_order_status('nyk-1002') -> {'found': True, 'record_id': 'NYK-1002', 'category': 'Beauty', 'status': 'Delivered', 'order_value_inr': 4669, 'days_since_created': 24, 'delayed_shipment': False, 'escalation_score': 0.32, 'escalate': False}
+  check_order_status('NYK-1009') -> {'found': True, 'record_id': 'NYK-1009', 'category': 'Footwear', 'status': 'Delivered', 'order_value_inr': 5309, 'days_since_created': 15, 'delayed_shipment': True, 'escalation_score': 0.8, 'escalate': True}
+  check_order_status('NYK-9999') -> {'found': False, 'record_id': 'NYK-9999', 'error': 'No order found with ID NYK-9999.'}
+
+Distribution in the generated data (60 orders):
+  days_since_created percentiles  p50=10  p75=20  p80=22  p90=26.1
+  escalation_score   percentiles  p50=0.180  p75=0.400  p80=0.656  p90=0.803
+  non-delayed orders: max score 0.400 (can never reach 0.7)
+  ages of the 14 delayed orders: [3, 4, 5, 6, 6, 6, 12, 15, 17, 20, 20, 22, 22, 24]
+    -> two clusters, 3-6 days and 12-24 days; scores 0.680 vs 0.760
+
+Threshold 0.7:
+  = delayed AND days_since_created >= 8 (past the KB's 7-day upper delivery SLA)
+  = the 86.7th percentile of escalation_score in this data
+  flags 8/60 orders (13.3%): ['NYK-1009', 'NYK-1019', 'NYK-1027', 'NYK-1029', 'NYK-1039', 'NYK-1040', 'NYK-1057', 'NYK-1060']

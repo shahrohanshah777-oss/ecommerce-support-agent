@@ -1,4 +1,4 @@
-"""Task 8 - session memory with LangChain's InMemoryChatMessageHistory +
+"""Session memory with LangChain's InMemoryChatMessageHistory +
 RunnableWithMessageHistory.
 
 History lives in-process only (one InMemoryChatMessageHistory per session_id); it

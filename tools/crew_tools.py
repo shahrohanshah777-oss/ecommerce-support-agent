@@ -1,9 +1,9 @@
-"""CrewAI tool wrappers for the RAG core (Tasks 3-5) and the order lookup (Task 6).
+"""CrewAI tool wrappers for the RAG core and the order lookup.
 
 Each tool records its invocations in `calls` (and what it returned in `outputs`)
 so demos can prove it actually ran, and is bound to the agent role it was issued to: `_run` calls
 governance.authorize() first, so a tool wired to the wrong agent fails closed
-(Task 15 least autonomy).
+(least autonomy, see governance.py).
 """
 from __future__ import annotations
 

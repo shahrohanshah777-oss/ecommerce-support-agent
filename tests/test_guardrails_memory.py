@@ -1,4 +1,4 @@
-"""Tests for Task 8 (memory) and Task 10 (guardrails), plus the pipeline wiring."""
+"""Tests for session memory and the guardrails, plus the pipeline wiring."""
 import re
 
 import config  # noqa: F401

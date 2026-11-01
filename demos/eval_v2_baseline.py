@@ -15,7 +15,7 @@ from rag.kb import REQUIRED_TOPICS
 def main() -> None:
     assert set(REQUIRED_TOPICS) <= {c.topic for c in TESTSET_V2}
     print(f"Held-out set v2: {len(TESTSET_V2)} queries (12 KB topics + 3 edge cases), never used for tuning.")
-    print("System state: as of Phase 8, before the answer-selection improvements.\n")
+    print("System state: before the answer-selection improvements.\n")
     results = evaluate(TESTSET_V2, session_prefix="v2base")
     print_table(results)
     print("\nPer-query details:")

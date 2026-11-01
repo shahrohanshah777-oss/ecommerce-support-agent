@@ -1,4 +1,4 @@
-"""Task 15 - AI governance: application-layer least autonomy, risk classification,
+"""AI governance: application-layer least autonomy, risk classification,
 and the runtime-layer per-request token/cost budget.
 
 Application layer - least autonomy

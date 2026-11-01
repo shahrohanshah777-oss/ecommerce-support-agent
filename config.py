@@ -50,16 +50,16 @@ COLLECTION_FIXED = "kb_fixed"
 COLLECTION_SENTENCE = "kb_sentence"
 FIXED_CHUNK_WORDS = 40
 FIXED_CHUNK_OVERLAP = 10
-# Task 5 recommendation (equal mean precision 0.767; recall 1.000 vs 0.900).
+# Recommended by the retrieval evaluation (equal mean precision 0.767; recall 1.000 vs 0.900).
 RECOMMENDED_COLLECTION = COLLECTION_SENTENCE
 TOP_K = 3
 # "I don't know" threshold on top-1 cosine similarity, calibrated empirically in
-# demos/task04_calibrate.py (12 in-scope vs 10 out-of-scope queries):
+# demos/idk_calibration.py (12 in-scope vs 10 out-of-scope queries):
 #   kb_fixed:    in-scope min 0.350, out-of-scope max 0.329 -> midpoint 0.3395
 #   kb_sentence: in-scope min 0.349, out-of-scope max 0.330 -> midpoint 0.3395
 IDK_THRESHOLD = 0.34
 # For order-status queries the Composer appends retrieved policy only above this
-# similarity. Calibrated in demos/task07_crew.py (order IDs stripped from the
+# similarity. Calibrated in demos/crew_kickoff.py (order IDs stripped from the
 # retrieval query): pure status questions ("Where is my order NYK-1009?") top
 # out at 0.480; order+policy questions ("Can I cancel my order NYK-1004?")
 # start at 0.508 -> midpoint 0.494.

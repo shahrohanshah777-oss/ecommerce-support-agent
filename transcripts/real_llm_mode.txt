@@ -80,7 +80,7 @@ Groundedness (real mode): the Autogen reviewer (real LLM) judges support; the fi
 Showcase total: 32,880 tokens
 
 ####################################################################################################
-# task13: 15 queries, real pipeline + real LLM judge
+# testset: 15 queries, real pipeline + real LLM judge
 ####################################################################################################
 ID   topic                                    Acc  Grnd  Comp  Safe
 ------------------------------------------------------------------
@@ -193,4 +193,4 @@ AVG  (15 queries)                            0.90  0.87  0.87  1.00
   judge: The assistant provided order details that are fully supported by the order record (grounded), but it failed to answer the core question about escalation, omitting the expected key fact that the ticket will be escalated to Level 2. Thus completeness is 0 and accuracy is low despite safe content.
 
 15 queries in 609s; judge used 12,825 tokens
-[results saved -> eval/results_real_llm_task13.json]
+[results saved -> eval/results_real_llm.json]

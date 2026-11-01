@@ -1,4 +1,4 @@
-"""Tests for Task 6 (order tool), Task 7 (crew) and Task 9 (schema)."""
+"""Tests for the order tool, the crew and the response schema."""
 import config  # noqa: F401
 
 import pytest
@@ -9,7 +9,7 @@ from crew.schemas import SupportResponse
 from tools.order_status import ESCALATION_THRESHOLD, check_order_status, escalation_score
 
 
-# --- Task 6 -----------------------------------------------------------------
+# --- Order tool -----------------------------------------------------------------
 def test_escalation_formula_combines_both_signals():
     assert escalation_score(False, 0) == 0.0
     assert escalation_score(False, 30) == 0.4  # age alone can never escalate
@@ -31,7 +31,7 @@ def test_check_order_status_lookup_and_not_found():
     assert check_order_status("NYK-9999")["found"] is False
 
 
-# --- Task 7 / 9 -------------------------------------------------------------
+# --- Crew and schema -------------------------------------------------------------
 def test_policy_query_invokes_only_rag_tool():
     run = run_crew("How many reward points can I use on an order?")
     assert run.tool_calls["rag_lookup"] and not run.tool_calls["check_order_status"]

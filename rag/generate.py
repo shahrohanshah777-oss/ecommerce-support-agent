@@ -1,4 +1,4 @@
-"""Task 4 - grounded generation over the retrieved context only.
+"""Grounded generation over the retrieved context only.
 
 Retrieval uses small chunks (one sentence each) because they match queries
 precisely; generation uses "small-to-big" expansion: the generator sees every
@@ -69,7 +69,7 @@ class GroundedAnswer(BaseModel):
 
 
 class MockGenerator:
-    """Extractive stand-in for an LLM. Counts calls (used by the Task 16 cache demo)."""
+    """Extractive stand-in for an LLM. Counts calls (used by the cache demo)."""
 
     def __init__(self) -> None:
         self.calls = 0

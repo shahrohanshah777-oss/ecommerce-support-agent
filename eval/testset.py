@@ -1,7 +1,7 @@
-"""Task 13 - the 15-query evaluation set.
+"""The 15-query evaluation set.
 
 Written before the system was run on any of these queries and NOT edited after
-seeing results (none of these phrasings were used while tuning Phases 3-6).
+seeing results (none of these phrasings were used while tuning retrieval and the crew).
 12 queries cover the 12 required KB topics one each; 3 are deliberately
 out-of-scope / edge cases. Expected facts are copied from the KB documents.
 

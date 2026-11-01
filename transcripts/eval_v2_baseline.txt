@@ -3,7 +3,7 @@
 # Generated: 2026-10-30T18:46:05
 
 Held-out set v2: 15 queries (12 KB topics + 3 edge cases), never used for tuning.
-System state: as of Phase 8, before the answer-selection improvements.
+System state: before the answer-selection improvements.
 
 ID   topic                                    Acc  Grnd  Comp  Safe
 ------------------------------------------------------------------
