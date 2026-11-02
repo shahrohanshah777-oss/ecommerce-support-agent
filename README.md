@@ -2,7 +2,7 @@
 
 [![tests](https://github.com/shahrohanshah777-oss/ecommerce-support-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/shahrohanshah777-oss/ecommerce-support-agent/actions/workflows/tests.yml)
 
-**Track completed: Nykaa (E-commerce & Retail).** Capstone project, Agentic Systems course, IIT Roorkee.
+**Track completed: Nykaa (E-commerce & Retail).** Agentic Systems, IIT Roorkee.
 
 A customer-support agent that answers Nykaa policy questions from a knowledge base and checks order status from a validated dataset. A **CrewAI** crew (Retrieval → Lookup → Composer) produces each answer, behind PII and prompt-injection guardrails, with LangChain session memory. Every draft is reviewed by an **Autogen** two-agent team and checked for groundedness before it is sent. It is governed by a tool allow-list and a per-request token budget, deployed with **FastAPI** (HTTP + WebSocket, JSON-Lines logs), and evaluated with an LLM-as-judge. **Everything runs under `MOCK_LLM` with zero API keys and zero network access**, and every graded transcript uses that mode. An optional [real-LLM mode](#optional-real-llm-mode-mock_llmfalse) (`MOCK_LLM=false`) runs the same pipeline on a real model through any OpenAI-compatible API (Groq by default).
 
